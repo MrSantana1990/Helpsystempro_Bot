@@ -79,25 +79,18 @@ async def verificar_minimo_compra(moeda):
                 for symbol in data['symbols']:
                     if symbol['symbol'] == moeda:
                         min_notional = None
-                        min_qty = None
 
                         for filtro in symbol['filters']:
                             if filtro['filterType'] == 'MIN_NOTIONAL':
                                 min_notional = float(filtro['minNotional'])
-                            elif filtro['filterType'] == 'LOT_SIZE':
-                                min_qty = float(filtro['minQty'])
+                                break  # Parar após encontrar o filtro necessário
 
                         if min_notional:
-                            print(f"🔍 Minimo de compra (MIN_NOTIONAL) para {moeda}: {min_notional}")
+                            print(f"🔍 Minimo de compra para {moeda}: {min_notional}")
                             return min_notional
-                        elif min_qty:
-                            print(f"🔍 Minimo de compra (LOT_SIZE) para {moeda}: {min_qty}")
-                            return min_qty
-                        else:
-                            print(f"⚠️ Nenhum filtro encontrado para {moeda}.")
-                            return None
-        print(f"⚠️ Moeda {moeda} não encontrada.")
-        return None
+
+                print(f"⚠️ Moeda {moeda} não encontrada ou sem filtros disponíveis.")
+                return None
     except Exception as e:
         print(f"❌ Erro ao verificar o mínimo de compra para {moeda}: {e}")
         logger.error(f"Erro ao verificar o mínimo de compra: {e}")
