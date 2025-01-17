@@ -3,6 +3,9 @@ import asyncio
 from textblob import TextBlob
 import os
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Carregar variáveis de ambiente
 load_dotenv(dotenv_path='C:\\Users\\Rodolfo Santana\\Documents\\github\\binancebot\\config\\key.env')
@@ -64,27 +67,40 @@ def selecionar_melhores_moedas(sentimento):
     else:
         return ['XRPUSDT', 'DOGEUSDT']
 
-# Função para verificar o valor mínimo de compra de uma moeda
-# ✅ Ajuste da função para ser assíncrona
+# 🔍 Buscar o valor mínimo de compra (LOT_SIZE e MIN_NOTIONAL)
 async def verificar_minimo_compra(moeda):
-    url = f"https://api.binance.com/api/v3/exchangeInfo"
+    url = "https://api.binance.com/api/v3/exchangeInfo"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 response.raise_for_status()
                 data = await response.json()
-                
+
                 for symbol in data['symbols']:
                     if symbol['symbol'] == moeda:
+                        min_notional = None
+                        min_qty = None
+
                         for filtro in symbol['filters']:
-                            if filtro['filterType'] == 'LOT_SIZE':
-                                minimo_compra = float(filtro['minQty'])
-                                print(f"Minimo de compra para {moeda}: {minimo_compra}")
-                                return minimo_compra
-                print(f"Não foi possível encontrar o valor mínimo de compra para {moeda}.")
-                return None
+                            if filtro['filterType'] == 'MIN_NOTIONAL':
+                                min_notional = float(filtro['minNotional'])
+                            elif filtro['filterType'] == 'LOT_SIZE':
+                                min_qty = float(filtro['minQty'])
+
+                        if min_notional:
+                            print(f"🔍 Minimo de compra (MIN_NOTIONAL) para {moeda}: {min_notional}")
+                            return min_notional
+                        elif min_qty:
+                            print(f"🔍 Minimo de compra (LOT_SIZE) para {moeda}: {min_qty}")
+                            return min_qty
+                        else:
+                            print(f"⚠️ Nenhum filtro encontrado para {moeda}.")
+                            return None
+        print(f"⚠️ Moeda {moeda} não encontrada.")
+        return None
     except Exception as e:
-        print(f"Erro ao verificar o mínimo de compra: {e}")
+        print(f"❌ Erro ao verificar o mínimo de compra para {moeda}: {e}")
+        logger.error(f"Erro ao verificar o mínimo de compra: {e}")
         return None
 
 # Função para buscar informações da Binance

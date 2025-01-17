@@ -193,3 +193,82 @@
 2025-01-17 10:44:04,720 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
 2025-01-17 10:44:05,761 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
 2025-01-17 10:44:06,082 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 13:06:57,514 - INFO - Sincronização com a Binance realizada. Offset: -1558ms
+2025-01-17 13:09:11,504 - INFO - Sincronização com a Binance realizada. Offset: -1560ms
+2025-01-17 13:09:12,896 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para BTCUSDT.
+2025-01-17 13:09:13,698 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 13:09:14,492 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para ETHUSDT.
+2025-01-17 13:09:14,827 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 13:09:46,622 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para BTCUSDT.
+2025-01-17 13:09:46,623 - ERROR - Erro ao enviar mensagem para o Telegram: Unknown error in HTTP implementation: RuntimeError('Event loop is closed')
+2025-01-17 13:09:47,625 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para ETHUSDT.
+2025-01-17 13:09:48,637 - ERROR - Erro ao enviar mensagem para o Telegram: Pool timeout: All connections in the connection pool are occupied. Request was *not* sent to Telegram. Consider adjusting the connection pool size or the pool timeout.
+2025-01-17 13:10:20,515 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para BTCUSDT.
+2025-01-17 13:10:21,529 - ERROR - Erro ao enviar mensagem para o Telegram: Pool timeout: All connections in the connection pool are occupied. Request was *not* sent to Telegram. Consider adjusting the connection pool size or the pool timeout.
+2025-01-17 13:10:22,287 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para ETHUSDT.
+2025-01-17 13:10:23,295 - ERROR - Erro ao enviar mensagem para o Telegram: Pool timeout: All connections in the connection pool are occupied. Request was *not* sent to Telegram. Consider adjusting the connection pool size or the pool timeout.
+2025-01-17 13:10:54,542 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para BTCUSDT.
+2025-01-17 13:10:55,547 - ERROR - Erro ao enviar mensagem para o Telegram: Pool timeout: All connections in the connection pool are occupied. Request was *not* sent to Telegram. Consider adjusting the connection pool size or the pool timeout.
+2025-01-17 13:10:56,327 - WARNING - \u26a0\ufe0f Não foi possível determinar o valor mínimo de compra para ETHUSDT.
+2025-01-17 13:10:57,330 - ERROR - Erro ao enviar mensagem para o Telegram: Pool timeout: All connections in the connection pool are occupied. Request was *not* sent to Telegram. Consider adjusting the connection pool size or the pool timeout.
+2025-01-17 13:15:03,856 - INFO - Sincronização com a Binance realizada. Offset: -1563ms
+2025-01-17 13:15:05,376 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:15:05,377 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:15:06,871 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:15:06,871 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:27:01,252 - INFO - Sincronização com a Binance realizada. Offset: -1573ms
+2025-01-17 13:27:03,886 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:27:03,887 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:27:04,908 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:27:04,908 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:27:37,028 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:27:37,029 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:27:38,045 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:27:38,045 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:28:09,724 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:28:09,725 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:28:10,752 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:28:10,753 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:28:42,874 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:28:42,875 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:28:43,905 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:28:43,907 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:29:15,984 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:29:15,985 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:29:17,021 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:29:17,022 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:29:48,541 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:29:48,542 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:29:49,571 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:29:49,571 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:30:21,645 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:30:21,646 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:30:22,676 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:30:22,676 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:30:54,389 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:30:54,390 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:30:55,415 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:30:55,417 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:31:27,610 - ERROR - Erro ao comprar BTCUSDT: APIError(code=-1100): Illegal characters found in parameter 'quantity'; legal range is '^([0-9]{1,20})(\.[0-9]{1,20})?$'.
+2025-01-17 13:31:27,611 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:31:28,653 - ERROR - Erro ao comprar ETHUSDT: APIError(code=-1013): Filter failure: LOT_SIZE
+2025-01-17 13:31:28,655 - ERROR - Erro ao enviar mensagem para o Telegram: name 'aiohttp' is not defined
+2025-01-17 13:33:12,233 - INFO - Sincronização com a Binance realizada. Offset: -1577ms
+2025-01-17 13:50:14,230 - INFO - Sincronização com a Binance realizada. Offset: -1589ms
+2025-01-17 13:53:00,975 - INFO - Sincronização com a Binance realizada. Offset: -1591ms
+2025-01-17 13:56:26,755 - INFO - Sincronização com a Binance realizada. Offset: -1594ms
+2025-01-17 14:14:42,654 - INFO - Sincronização com a Binance realizada. Offset: -1604ms
+2025-01-17 14:14:45,342 - WARNING - \u26a0\ufe0f Ordem para BTCUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:14:46,910 - WARNING - \u26a0\ufe0f Ordem para ETHUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:15:22,656 - INFO - Sincronização com a Binance realizada. Offset: -1605ms
+2025-01-17 14:15:25,176 - WARNING - \u26a0\ufe0f Ordem para BTCUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:15:26,697 - WARNING - \u26a0\ufe0f Ordem para ETHUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:15:59,282 - WARNING - \u26a0\ufe0f Ordem para BTCUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:16:00,763 - WARNING - \u26a0\ufe0f Ordem para ETHUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:16:32,761 - WARNING - \u26a0\ufe0f Ordem para BTCUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:16:34,309 - WARNING - \u26a0\ufe0f Ordem para ETHUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:17:06,287 - WARNING - \u26a0\ufe0f Ordem para BTCUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:17:07,785 - WARNING - \u26a0\ufe0f Ordem para ETHUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:58:27,541 - INFO - Sincronização com a Binance realizada. Offset: -1633ms
+2025-01-17 14:58:30,881 - WARNING - \u26a0\ufe0f Ordem para BTCUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
+2025-01-17 14:58:32,407 - WARNING - \u26a0\ufe0f Ordem para ETHUSDT abaixo do mínimo permitido (None). Valor da ordem: 1.32
