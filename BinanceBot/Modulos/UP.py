@@ -36,6 +36,10 @@ else:
     with open(gitignore_path, "w") as gitignore:
         gitignore.write(f"{ignore_dir}/\n")
 
+# Verifique se os arquivos estão realmente sendo adicionados
+status = subprocess.run("git status", check=True, capture_output=True, text=True)
+print("Status do Git:\n", status.stdout)
+
 # Realizar o commit com uma mensagem personalizada
 commit_message = input("Digite a mensagem de commit: ")
 if not run_git_command(f"git commit -m \"{commit_message}\""):

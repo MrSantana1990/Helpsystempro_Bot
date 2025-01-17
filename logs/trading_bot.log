@@ -5,3 +5,191 @@
 2025-01-17 09:24:19,715 - ERROR - Erro ao executar bot: name 'verificar_minimo_compra' is not defined
 2025-01-17 09:25:21,034 - ERROR - Erro ao executar bot: name 'verificar_minimo_compra' is not defined
 2025-01-17 09:25:32,347 - INFO - Sincronização de horário com a Binance realizada. Offset aplicado: -1416ms
+2025-01-17 09:41:33,001 - INFO - Sincronização de horário com a Binance realizada. Offset aplicado: -1418ms
+2025-01-17 10:27:39,856 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:27:40,629 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:41,630 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:27:41,956 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:43,408 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:27:43,747 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:44,751 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:27:45,078 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:46,583 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:27:46,946 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:47,958 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:27:48,288 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:49,720 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:27:50,045 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:51,044 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:27:51,370 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:52,809 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:27:53,133 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:54,140 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:27:54,464 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:55,915 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:27:56,262 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:57,267 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:27:57,604 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:27:59,091 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:27:59,415 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:00,662 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:00,992 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:02,483 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:02,840 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:03,841 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:04,205 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:05,710 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:06,082 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:07,090 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:07,417 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:08,883 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:09,212 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:10,211 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:10,542 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:12,020 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:12,350 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:13,362 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:13,696 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:15,583 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:15,919 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:17,148 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:17,492 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:18,970 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:19,294 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:20,307 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:20,629 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:22,499 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:22,820 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:24,303 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:24,648 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:26,392 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:26,720 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:27,743 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:28,072 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:29,541 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:29,864 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:30,886 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:31,207 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:32,668 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:32,988 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:33,993 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:34,322 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:35,799 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:36,138 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:37,126 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:37,470 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:38,954 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:39,280 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:40,307 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:40,647 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:42,783 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:43,107 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:44,137 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:44,462 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:46,464 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:46,795 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:48,535 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:48,875 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:50,716 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:51,044 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:52,051 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:52,375 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:53,814 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:54,140 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:55,383 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:28:55,708 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:28:59,063 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:28:59,416 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:00,416 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:29:00,741 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:02,232 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:29:02,560 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:03,559 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:29:03,906 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:05,363 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:29:05,717 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:07,454 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:29:07,777 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:10,215 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:29:10,539 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:12,029 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:29:12,356 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:14,304 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:29:14,625 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:15,870 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:29:16,195 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:17,648 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:29:18,010 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:19,011 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:29:19,336 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:20,802 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:29:21,154 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:29:22,168 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 10:29:22,506 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:36:46,749 - INFO - Sincronização de horário com a Binance realizada. Offset aplicado: -1455ms
+2025-01-17 10:36:48,651 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:36:49,410 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:36:50,411 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:36:50,753 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:36:52,685 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:36:53,010 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:36:54,031 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:36:54,365 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:36:56,285 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:36:56,611 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:36:57,627 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:36:57,969 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:36:59,844 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:37:00,195 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:37:01,209 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:37:01,555 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:35,648 - INFO - Sincronização de horário com a Binance realizada. Offset aplicado: -1459ms
+2025-01-17 10:40:37,150 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:37,934 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:38,945 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:39,296 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:40,791 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:41,123 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:42,143 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:42,464 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:43,924 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:44,254 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:45,303 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:45,648 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:47,610 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:47,941 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:40:48,953 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:40:49,306 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:39,939 - INFO - Sincronização de horário com a Binance realizada. Offset aplicado: -1461ms
+2025-01-17 10:43:41,462 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:42,200 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:43,235 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:43,561 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:45,045 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:45,379 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:46,390 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:46,715 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:48,159 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:48,494 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:49,487 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:49,810 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:51,251 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:51,642 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:52,653 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:52,975 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:54,433 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:54,758 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:55,789 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:56,107 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:57,601 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:57,943 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:43:58,976 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:43:59,321 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:44:00,757 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:44:01,079 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:44:02,078 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:44:02,408 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:44:04,393 - ERROR - Erro ao comprar XRPUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:44:04,720 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
+2025-01-17 10:44:05,761 - ERROR - Erro ao comprar DOGEUSDT: APIError(code=-1013): Filter failure: NOTIONAL
+2025-01-17 10:44:06,082 - INFO - HTTP Request: POST https://api.telegram.org/bot7777733472:AAHCsObeiKLV-aHsKMFsPOpSCYbNRI4nt20/sendMessage "HTTP/1.1 200 OK"
