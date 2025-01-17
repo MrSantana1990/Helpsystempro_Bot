@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from telegram import Bot
 import asyncio
 from binance.client import Client
-from Modulos.market_data import buscar_noticias, analisar_sentimento, ajustar_variaveis, selecionar_melhores_moedas
+from Modulos.market_data import buscar_noticias, analisar_sentimento, ajustar_variaveis, selecionar_melhores_moedas, verificar_minimo_compra
 from Modulos.trading_strategy import calcular_rsi, sinal_rsi
 from Modulos.notifications import enviar_alerta, alerta_compra, alerta_venda
 from Modulos.logger import configurar_logger
