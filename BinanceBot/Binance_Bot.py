@@ -7,10 +7,11 @@ from telegram import Bot
 import asyncio
 import aiohttp
 from binance.client import Client
-from Modulos.market_data import buscar_noticias, analisar_sentimento, ajustar_variaveis, selecionar_melhores_moedas, verificar_minimo_compra
+from Modulos.market_data import buscar_noticias, analisar_sentimento, ajustar_variaveis, selecionar_melhores_moedas
 from Modulos.trading_strategy import calcular_rsi, sinal_rsi
 from Modulos.notifications import enviar_alerta, alerta_compra, alerta_venda
 from Modulos.logger import configurar_logger
+from Modulos.order_manager import verificar_minimo_compra, ajustar_quantidade, executar_compra
 
 logger = configurar_logger()
 
@@ -106,76 +107,24 @@ def buscar_preco(par_moeda):
         logger.error(f"Erro ao buscar preço de {par_moeda}: {e}")
         return 0.0
 
-# Ajustar quantidade com base no LOT_SIZE
-def ajustar_quantidade(moeda, quantidade):
-    try:
-        exchange_info = client.get_symbol_info(moeda)
-        for filtro in exchange_info['filters']:
-            if filtro['filterType'] == 'LOT_SIZE':
-                step_size = float(filtro['stepSize'])
-                casas_decimais = abs(int(format(step_size, 'e').split('e-')[1]))
-                quantidade_corrigida = round(quantidade - (quantidade % step_size), casas_decimais)
-                return format(quantidade_corrigida, f'.{casas_decimais}f')
-    except Exception as e:
-        logger.error(f"Erro ao ajustar a quantidade para {moeda}: {e}")
-        print(f"❌ Erro ao ajustar quantidade para {moeda}: {e}")
-    return quantidade
-
-# Verificar o mínimo de compra permitido para a moeda
-async def verificar_minimo_compra(par_moeda):
-    try:
-        exchange_info = client.get_symbol_info(par_moeda)
-        if exchange_info is None:
-            logger.error(f"Par de moedas {par_moeda} não encontrado na Binance.")
-            return None
-        for filtro in exchange_info['filters']:
-            if filtro['filterType'] == 'MIN_NOTIONAL':
-                min_notional = float(filtro['minNotional'])
-                logger.info(f"MinNotional para {par_moeda}: {min_notional}")
-                return min_notional
-    except Exception as e:
-        logger.error(f"Erro ao verificar mínimo de compra para {par_moeda}: {e}")
-        return None
-
 # 📊 Função principal
 async def executar_bot():
-    saldo = verificar_saldo()
-    if saldo <= 0.01:
-        await enviar_mensagem_telegram("❌ Saldo insuficiente para operação.")
+    saldo_total = verificar_saldo()
+    if saldo_total <= 5:
+        await enviar_mensagem_telegram("❌ Saldo insuficiente para operação. O valor mínimo é 5 USDT.")
+        logger.warning("❌ Saldo insuficiente para operação.")
         return
 
     noticias_gerais = await buscar_noticias()
     sentimento_geral = analisar_sentimento(noticias_gerais)
     moedas_selecionadas = selecionar_melhores_moedas(sentimento_geral)
-    saldo_por_moeda = saldo / len(moedas_selecionadas)
+
+    # Ajuste para garantir o mínimo de 5 USDT por moeda
+    saldo_por_moeda = max(saldo_total / len(moedas_selecionadas), 5)
 
     for moeda in moedas_selecionadas:
         preco_atual = buscar_preco(moeda)
-        min_notional = await verificar_minimo_compra(moeda)
-        valor_ordem = saldo_por_moeda
-
-        # Verificar se o valor da ordem é maior ou igual ao mínimo permitido
-        if min_notional is None or valor_ordem < min_notional:
-            mensagem = f"⚠️ Ordem para {moeda} abaixo do mínimo permitido ({min_notional}). Valor da ordem: {valor_ordem:.2f}"
-            await enviar_mensagem_telegram(mensagem)
-            logger.warning(mensagem)
-            continue
-
-        # Ajustar quantidade de acordo com o stepSize
-        quantidade = ajustar_quantidade(moeda, valor_ordem / preco_atual)
-        if float(quantidade) <= 0:
-            mensagem = f"⚠️ Quantidade ajustada para {moeda} é inválida: {quantidade}"
-            await enviar_mensagem_telegram(mensagem)
-            logger.warning(mensagem)
-            continue
-
-        try:
-            ordem = client.order_market_buy(symbol=moeda, quantity=quantidade)
-            await enviar_mensagem_telegram(f"🟢 Compra realizada de {moeda}: {ordem}")
-        except Exception as e:
-            mensagem = f"❌ Erro ao comprar {moeda}: {e}"
-            await enviar_mensagem_telegram(mensagem)
-            logger.error(mensagem)
+        await executar_compra(client, moeda, saldo_por_moeda, preco_atual, enviar_mensagem_telegram)
 
 if __name__ == "__main__":
     while True:
