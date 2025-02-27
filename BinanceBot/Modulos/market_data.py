@@ -13,28 +13,23 @@ load_dotenv(dotenv_path='C:\\Users\\Rodolfo Santana\\Documents\\github\\binanceb
 # Obter a chave da API de notícias
 API_KEY_NEWS = os.getenv('NEWS_API_KEY')
 
-# Função para buscar notícias relacionadas a criptomoedas
+# Buscar notícias relacionadas a criptomoedas
 async def buscar_noticias(termo='crypto'):
     if not API_KEY_NEWS:
-        print("API Key da NewsAPI não encontrada. Verifique o arquivo .env.")
+        logger.error("API Key da NewsAPI não encontrada. Verifique o arquivo .env.")
         return []
     url = f"https://newsapi.org/v2/everything?q={termo}&language=pt&apiKey={API_KEY_NEWS}"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
-                if response.status != 200:
-                    print(f"Falha ao buscar notícias: Código de status HTTP inválido {response.status}")
-                    return []
-                data = await response.json(content_type=None)
-                noticias = data.get('articles', [])
-                if not noticias:
-                    print("Nenhuma notícia encontrada.")
-                return noticias
-    except aiohttp.ClientError as e:
-        print(f"Erro ao buscar notícias: {e}")
+                response.raise_for_status()
+                data = await response.json()
+                return data.get('articles', [])
+    except Exception as e:
+        logger.error(f"Erro ao buscar notícias: {e}")
         return []
 
-# Função para analisar o sentimento das notícias
+# Analisar o sentimento das notícias
 def analisar_sentimento(noticias):
     sentimentos = []
     for noticia in noticias:
@@ -45,29 +40,53 @@ def analisar_sentimento(noticias):
         sentimentos.append(sentimento)
     return sum(sentimentos) / len(sentimentos) if sentimentos else 0
 
-# Função para ajustar as variáveis de operação com base no sentimento
+# Ajustar variáveis de operação com base no sentimento
 def ajustar_variaveis(sentimento_geral):
     if sentimento_geral > 0.1:
-        print("Sentimento positivo. Considerando compra.")
         return 'compra', 0.02
     elif sentimento_geral < -0.1:
-        print("Sentimento negativo. Considerando venda ou precaução.")
         return 'venda', 0.01
     else:
-        print("Sentimento neutro. Aguardando melhores oportunidades.")
         return 'aguardar', 0.005
 
-# Função para selecionar as melhores moedas com base no sentimento
-def selecionar_melhores_moedas(sentimento):
-    moedas_possiveis = ['BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT']
-    if sentimento > 0.5:
-        return moedas_possiveis
-    elif 0 < sentimento <= 0.5:
-        return ['BTCUSDT', 'ETHUSDT']
-    else:
-        return ['XRPUSDT', 'DOGEUSDT']
+# Avaliar moedas com base na variação de preço e volume
+def avaliar_moeda(client, par_moeda):
+    try:
+        ticker = client.get_ticker(symbol=par_moeda)
+        variacao_percentual = float(ticker['priceChangePercent'])
+        volume = float(ticker['quoteVolume'])
+        return {
+            'moeda': par_moeda,
+            'variacao_percentual': variacao_percentual,
+            'volume': volume
+        }
+    except Exception as e:
+        logger.error(f"Erro ao avaliar a moeda {par_moeda}: {e}")
+        return None
 
-# 🔍 Buscar o valor mínimo de compra (LOT_SIZE e MIN_NOTIONAL)
+# Selecionar as melhores moedas com base no sentimento e dados do mercado
+def selecionar_melhores_moedas(client, sentimento, saldo_disponivel):
+    moedas_possiveis = ['BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'SOLUSDT']
+    moedas_avaliadas = [avaliar_moeda(client, moeda) for moeda in moedas_possiveis]
+    moedas_avaliadas = [m for m in moedas_avaliadas if m]
+
+    # Filtro por saldo disponível
+    moedas_filtradas = []
+    for moeda in moedas_avaliadas:
+        preco_atual = buscar_preco(moeda['moeda'])
+        if saldo_disponivel >= preco_atual * 0.001:  # Exemplo: 0.001 unidade mínima
+            moedas_filtradas.append(moeda)
+
+    moedas_filtradas.sort(key=lambda x: x['variacao_percentual'], reverse=True)
+
+    if sentimento > 0.5:
+        return [m['moeda'] for m in moedas_filtradas[:3]]
+    elif 0 < sentimento <= 0.5:
+        return [m['moeda'] for m in moedas_filtradas[:2]]
+    else:
+        return [m['moeda'] for m in moedas_filtradas[-2:]]
+
+# Verificar o valor mínimo de compra
 async def verificar_minimo_compra(moeda):
     url = "https://api.binance.com/api/v3/exchangeInfo"
     try:
@@ -75,61 +94,47 @@ async def verificar_minimo_compra(moeda):
             async with session.get(url) as response:
                 response.raise_for_status()
                 data = await response.json()
-
                 for symbol in data['symbols']:
                     if symbol['symbol'] == moeda:
-                        min_notional = None
-
                         for filtro in symbol['filters']:
                             if filtro['filterType'] == 'MIN_NOTIONAL':
-                                min_notional = float(filtro['minNotional'])
-                                break  # Parar após encontrar o filtro necessário
-
-                        if min_notional:
-                            print(f"🔍 Minimo de compra para {moeda}: {min_notional}")
-                            return min_notional
-
-                print(f"⚠️ Moeda {moeda} não encontrada ou sem filtros disponíveis.")
+                                return float(filtro['minNotional'])
+                logger.warning(f"⚠️ Moeda {moeda} não encontrada ou sem filtro MIN_NOTIONAL.")
                 return None
     except Exception as e:
-        print(f"❌ Erro ao verificar o mínimo de compra para {moeda}: {e}")
-        logger.error(f"Erro ao verificar o mínimo de compra: {e}")
+        logger.error(f"Erro ao verificar mínimo de compra para {moeda}: {e}")
         return None
 
-# Função para buscar informações da Binance
+# Buscar informações da Binance
 async def buscar_informacoes_binance(symbol):
     url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol}"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
-                data = await response.json(content_type=None)
-                print(f"Informações da Binance para {symbol}: {data}")
-                return data
-    except aiohttp.ClientError as e:
-        print(f"Erro ao buscar informações da Binance: {e}")
+                response.raise_for_status()
+                return await response.json()
+    except Exception as e:
+        logger.error(f"Erro ao buscar informações da Binance para {symbol}: {e}")
         return None
 
-# Função para buscar e processar notícias
-async def processar_noticias():
+# Função principal para processar notícias e moedas
+async def processar_noticias(client):
     noticias = await buscar_noticias()
     if not noticias:
-        print("Nenhuma notícia encontrada para analisar.")
+        logger.warning("Nenhuma notícia encontrada para análise.")
         return
 
     sentimento_geral = analisar_sentimento(noticias)
-    print(f"Sentimento geral das notícias: {sentimento_geral}")
+    logger.info(f"Sentimento geral das notícias: {sentimento_geral}")
 
     acao, risco = ajustar_variaveis(sentimento_geral)
-    print(f"Ação sugerida: {acao}, Risco: {risco}")
+    logger.info(f"Ação sugerida: {acao}, Risco: {risco}")
 
-    melhores_moedas = selecionar_melhores_moedas(sentimento_geral)
-    print(f"Melhores moedas para negociação: {melhores_moedas}")
+    melhores_moedas = selecionar_melhores_moedas(client, sentimento_geral)
+    logger.info(f"Melhores moedas para negociação: {melhores_moedas}")
 
     for moeda in melhores_moedas:
-        await verificar_minimo_compra(moeda)
+        min_notional = await verificar_minimo_compra(moeda)
         informacoes = await buscar_informacoes_binance(moeda)
         if informacoes:
-            print(f"Informações para {moeda}: {informacoes}")
-
-# Executar a análise de notícias
-asyncio.run(processar_noticias())
+            logger.info(f"Informações para {moeda}: {informacoes}")

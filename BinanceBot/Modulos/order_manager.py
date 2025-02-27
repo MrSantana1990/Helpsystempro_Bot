@@ -3,6 +3,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def calcular_stop_take(preco_compra, stop=2, take=5):
+    stop_loss = preco_compra * (1 - stop / 100)
+    take_profit = preco_compra * (1 + take / 100)
+    return stop_loss, take_profit
+
 async def verificar_minimo_compra(client, par_moeda):
     try:
         exchange_info = client.get_symbol_info(par_moeda)
@@ -43,9 +48,31 @@ def ajustar_quantidade(client, par_moeda, quantidade_desejada):
         logger.error(f"❌ Erro ao ajustar quantidade para {par_moeda}: {e}")
     return quantidade_desejada
 
+async def verificar_taxas(client):
+    try:
+        info = client.get_trade_fee()
+        taxas = {f['symbol']: f['makerCommission'] for f in info['tradeFee']}
+        logger.info(f"🔍 Taxas obtidas: {taxas}")
+        return taxas
+    except Exception as e:
+        logger.error(f"❌ Erro ao verificar taxas: {e}")
+        return {}
+
+def converter_para_usdt(client, par_moeda, quantidade):
+    try:
+        ordem_venda = client.order_market_sell(
+            symbol=par_moeda,
+            quantity=quantidade
+        )
+        logger.info(f"🟢 Venda realizada de {quantidade} {par_moeda}: {ordem_venda}")
+        return ordem_venda
+    except Exception as e:
+        logger.error(f"❌ Erro ao converter {par_moeda} para USDT: {e}")
+        return None
+
 async def executar_compra(client, par_moeda, saldo_disponivel, preco_atual, enviar_mensagem_telegram):
     min_notional = await verificar_minimo_compra(client, par_moeda)
-    
+
     # Garantir que o valor mínimo de compra seja respeitado
     if min_notional is None:
         mensagem = f"⚠️ Não foi possível determinar o valor mínimo de compra para {par_moeda}."
@@ -53,26 +80,54 @@ async def executar_compra(client, par_moeda, saldo_disponivel, preco_atual, envi
         logger.warning(mensagem)
         return
 
-    # Garantir que o valor da ordem não seja menor que o mínimo permitido
-    valor_ordem = max(saldo_disponivel, min_notional)
-
+    valor_ordem = saldo_disponivel
     if valor_ordem < min_notional:
-        mensagem = f"⚠️ Ordem para {par_moeda} abaixo do mínimo permitido ({min_notional}). Valor da ordem: {valor_ordem:.2f}"
+        mensagem = f"⚠️ Ordem para {par_moeda} abaixo do mínimo permitido ({min_notional}). Valor da ordem: {valor_ordem:.2f}."
         await enviar_mensagem_telegram(mensagem)
         logger.warning(mensagem)
         return
 
     quantidade = ajustar_quantidade(client, par_moeda, valor_ordem / preco_atual)
-    
+    valor_ordem_final = float(quantidade) * preco_atual
+
+    if valor_ordem_final < min_notional:
+        mensagem = f"❌ Quantidade ajustada não atende ao mínimo permitido para {par_moeda}. Valor: {valor_ordem_final:.2f}"
+        await enviar_mensagem_telegram(mensagem)
+        logger.warning(mensagem)
+        return
+
     try:
         ordem = client.order_market_buy(symbol=par_moeda, quantity=quantidade)
         mensagem = f"🟢 Compra realizada de {par_moeda}: {ordem}"
         await enviar_mensagem_telegram(mensagem)
         logger.info(mensagem)
+        
     except Exception as e:
         mensagem = f"❌ Erro ao comprar {par_moeda}: {e}"
         await enviar_mensagem_telegram(mensagem)
         logger.error(mensagem)
 
+        # Configurar Stop-Loss e Take-Profit
+        stop_loss, take_profit = calcular_stop_take(preco_atual, stop=2, take=5)
+        logger.info(f"🔒 Configurado Stop-Loss: {stop_loss:.2f}, Take-Profit: {take_profit:.2f}")
 
+        # Monitorar preço e realizar venda ao atingir lucro desejado
+        while True:
+            preco_atualizado = float(client.get_symbol_ticker(symbol=par_moeda)['price'])
+            if preco_atualizado >= take_profit:
+                converter_para_usdt(client, par_moeda, quantidade)
+                mensagem = f"🎯 Lucro atingido! Venda realizada de {par_moeda} com preço {preco_atualizado}."
+                await enviar_mensagem_telegram(mensagem)
+                logger.info(mensagem)
+                break
+            elif preco_atualizado <= stop_loss:
+                converter_para_usdt(client, par_moeda, quantidade)
+                mensagem = f"⛔ Stop-Loss acionado! Venda realizada de {par_moeda} com preço {preco_atualizado}."
+                await enviar_mensagem_telegram(mensagem)
+                logger.info(mensagem)
+                break
 
+    except Exception as e:
+        mensagem = f"❌ Erro ao comprar {par_moeda}: {e}"
+        await enviar_mensagem_telegram(mensagem)
+        logger.error(mensagem)
