@@ -1,84 +1,105 @@
 import os
 import subprocess
 import requests
+import yaml
+from dotenv import load_dotenv
+import logging
 
-# Caminho do diretório do repositório Git
-repo_dir = r"C:\Users\Rodolfo Santana\Documents\GitHub"
+# Configurar Logger
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-# Diretório a ser ignorado
-ignore_dir = 'painel'
+# Carregar configuração do repositório
+def carregar_config():
+    with open("configs/up_config.yml", "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+config = carregar_config()
+
+# Carregar Token do GitHub (via env ou arquivo seguro)
+load_dotenv("configs/keys.env")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 # Função para rodar comandos Git
 def run_git_command(command):
     try:
-        subprocess.run(command, check=True, shell=True)
+        subprocess.run(command, check=True, shell=True, cwd=config['repo_dir'])
+        return True
     except subprocess.CalledProcessError as e:
-        print(f"Erro ao executar o comando: {e}")
+        logger.error(f"Erro ao executar comando Git: {e}")
         return False
-    return True
 
-# Função para alterar a visibilidade do repositório no GitHub
-def change_repo_visibility(token, repo_name, visibility):
-    url = f"https://api.github.com/repos/{repo_name}"
-    data = {
-        "private": visibility == '1'  # Se for 1, torna privado, senão público
-    }
-    headers = {
-        "Authorization": f"token {token}"
-    }
+# Atualizar .gitignore automaticamente
+def atualizar_gitignore():
+    gitignore_path = os.path.join(config['repo_dir'], ".gitignore")
+    if os.path.exists(gitignore_path):
+        with open(gitignore_path, "r+") as gitignore:
+            conteudo = gitignore.read()
+            for ignore_dir in config['ignore_dirs']:
+                if ignore_dir not in conteudo:
+                    gitignore.write(f"\n{ignore_dir}/\n")
+                    logger.info(f"Diretório '{ignore_dir}' adicionado ao .gitignore.")
+    else:
+        with open(gitignore_path, "w") as gitignore:
+            for ignore_dir in config['ignore_dirs']:
+                gitignore.write(f"{ignore_dir}/\n")
+        logger.info(".gitignore criado e diretórios adicionados.")
+
+# Alterar visibilidade do repositório
+def change_repo_visibility(visibility):
+    url = f"https://api.github.com/repos/{config['repo_name']}"
+    data = {"private": visibility == '1'}
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+
     response = requests.patch(url, json=data, headers=headers)
-
     if response.status_code == 200:
-        print(f"Repositório agora é {'privado' if visibility == '1' else 'público'}!")
+        logger.info(f"Repositório agora é {'Privado' if visibility == '1' else 'Público'}.")
     else:
-        print(f"Erro ao tentar alterar a visibilidade: {response.status_code}")
-        print(response.json())
+        logger.error(f"Erro ao alterar visibilidade: {response.status_code} - {response.text}")
 
-# Navegar até o diretório do repositório
-os.chdir(repo_dir)
-
-# Adicionar arquivos ao repositório, excluindo o diretório 'painel'
-run_git_command("git add .")
-
-# Certificar-se de que o diretório 'painel' está ignorado
-gitignore_path = os.path.join(repo_dir, ".gitignore")
-
-# Verifique se o arquivo .gitignore existe
-if os.path.exists(gitignore_path):
-    with open(gitignore_path, "r+") as gitignore:
-        content = gitignore.read()
-        if ignore_dir not in content:
-            gitignore.write(f"\n{ignore_dir}/\n")
-else:
-    # Se o .gitignore não existir, crie um e adicione o diretório a ser ignorado
-    with open(gitignore_path, "w") as gitignore:
-        gitignore.write(f"{ignore_dir}/\n")
-
-# Verifique se os arquivos estão realmente sendo adicionados
-status = subprocess.run("git status", check=True, capture_output=True, text=True)
-print("Status do Git:\n", status.stdout)
-
-# Escolher o que fazer
-print("Escolha uma opção:")
-print("1 - Tornar repositório privado")
-print("2 - Tornar repositório público")
-print("3 - Realizar commit")
-opcao = input("Digite o número da opção: ")
-
-if opcao == '1' or opcao == '2':
-    token = input("Digite seu token do GitHub: ")
-    repo_name = "MrSantana1990/Helpsystempro_Bot"  # Nome do seu repositório no GitHub
-    change_repo_visibility(token, repo_name, opcao)
-elif opcao == '3':
-    # Realizar o commit com uma mensagem personalizada
-    commit_message = input("Digite a mensagem de commit: ")
-    if not run_git_command(f"git commit -m \"{commit_message}\""):
-        print("Erro no commit. Tente novamente.")
+# Checar última versão do repositório
+def checar_ultima_versao():
+    url = f"https://api.github.com/repos/{config['repo_name']}/releases/latest"
+    response = requests.get(url)
+    if response.status_code == 200:
+        versao = response.json().get('tag_name')
+        logger.info(f"Última versão disponível no GitHub: {versao}")
     else:
-        # Enviar as alterações para o repositório remoto
-        if run_git_command("git push origin master"):
-            print("Projeto enviado com sucesso para o GitHub!")
+        logger.warning("Não foi possível consultar a última versão no GitHub.")
+
+# Processo principal de atualização
+def executar_update():
+    atualizar_gitignore()
+
+    logger.info("Verificando status do repositório...")
+    run_git_command("git status")
+
+    opcao = input("Escolha uma opção:\n1 - Tornar repositório privado\n2 - Tornar repositório público\n3 - Realizar commit e push\n4 - Checar última versão\nOpção: ")
+
+    if opcao in ['1', '2']:
+        if not GITHUB_TOKEN:
+            logger.error("GITHUB_TOKEN não encontrado. Adicione ao arquivo .env.")
+            return
+        change_repo_visibility(opcao)
+
+    elif opcao == '3':
+        commit_message = input("Digite a mensagem de commit: ")
+        if run_git_command("git add ."):
+            if run_git_command(f"git commit -m \"{commit_message}\""):
+                if run_git_command("git push origin master"):
+                    logger.info("Código enviado para o GitHub com sucesso.")
+                else:
+                    logger.error("Erro ao enviar código para o GitHub.")
+            else:
+                logger.error("Erro ao realizar commit.")
         else:
-            print("Erro ao enviar para o GitHub.")
-else:
-    print("Opção inválida!")
+            logger.error("Erro ao adicionar arquivos.")
+
+    elif opcao == '4':
+        checar_ultima_versao()
+
+    else:
+        logger.warning("Opção inválida.")
+
+if __name__ == "__main__":
+    executar_update()

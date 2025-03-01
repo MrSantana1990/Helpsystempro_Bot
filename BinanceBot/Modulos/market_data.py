@@ -1,46 +1,66 @@
 import aiohttp
 import asyncio
-from textblob import TextBlob
 import os
-from dotenv import load_dotenv
 import logging
+import yaml
+from textblob import TextBlob
+from dotenv import load_dotenv
+from cachetools import TTLCache
 
 logger = logging.getLogger(__name__)
 
-# Carregar variáveis de ambiente
-load_dotenv(dotenv_path='C:\\Users\\Rodolfo Santana\\Documents\\github\\binancebot\\config\\key.env')
+# Cache de notícias - reduz chamadas duplicadas
+cache_noticias = TTLCache(maxsize=10, ttl=3600)
 
-# Obter a chave da API de notícias
+# Carregar configurações dinâmicas
+def carregar_config():
+    with open('Configs/settings.yml', 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
+
+config = carregar_config()
+
+# Carregar variáveis de ambiente
+load_dotenv('configs/keys.env')
 API_KEY_NEWS = os.getenv('NEWS_API_KEY')
 
-# Buscar notícias relacionadas a criptomoedas
+# Buscar notícias com cache
 async def buscar_noticias(termo='crypto'):
+    if termo in cache_noticias:
+        logger.info(f"📰 Notícias de '{termo}' carregadas do cache.")
+        return cache_noticias[termo]
+
     if not API_KEY_NEWS:
-        logger.error("API Key da NewsAPI não encontrada. Verifique o arquivo .env.")
+        logger.error("❌ API Key da NewsAPI não encontrada.")
         return []
+
     url = f"https://newsapi.org/v2/everything?q={termo}&language=pt&apiKey={API_KEY_NEWS}"
+
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 response.raise_for_status()
                 data = await response.json()
-                return data.get('articles', [])
+                artigos = data.get('articles', [])
+                cache_noticias[termo] = artigos
+                return artigos
     except Exception as e:
         logger.error(f"Erro ao buscar notícias: {e}")
         return []
 
-# Analisar o sentimento das notícias
+# Analisar sentimento de uma lista de notícias
 def analisar_sentimento(noticias):
     sentimentos = []
     for noticia in noticias:
-        titulo = noticia.get('title', '')
-        descricao = noticia.get('description', '')
-        texto = f"{titulo} {descricao}" if titulo and descricao else ''
-        sentimento = TextBlob(texto).sentiment.polarity
-        sentimentos.append(sentimento)
-    return sum(sentimentos) / len(sentimentos) if sentimentos else 0
+        texto = f"{noticia.get('title', '')} {noticia.get('description', '')}".strip()
+        if texto:
+            sentimento = TextBlob(texto).sentiment.polarity
+            sentimentos.append(sentimento)
 
-# Ajustar variáveis de operação com base no sentimento
+    media_sentimento = sum(sentimentos) / len(sentimentos) if sentimentos else 0
+    logger.info(f"📊 Sentimento médio: {media_sentimento:.2f}")
+    return media_sentimento
+
+# Ajustar estratégia com base no sentimento geral
 def ajustar_variaveis(sentimento_geral):
     if sentimento_geral > 0.1:
         return 'compra', 0.02
@@ -49,63 +69,50 @@ def ajustar_variaveis(sentimento_geral):
     else:
         return 'aguardar', 0.005
 
-# Avaliar moedas com base na variação de preço e volume
+# Coletar dados de variação de preço e volume
 def avaliar_moeda(client, par_moeda):
     try:
         ticker = client.get_ticker(symbol=par_moeda)
-        variacao_percentual = float(ticker['priceChangePercent'])
-        volume = float(ticker['quoteVolume'])
         return {
             'moeda': par_moeda,
-            'variacao_percentual': variacao_percentual,
-            'volume': volume
+            'variacao_percentual': float(ticker['priceChangePercent']),
+            'volume': float(ticker['quoteVolume'])
         }
     except Exception as e:
         logger.error(f"Erro ao avaliar a moeda {par_moeda}: {e}")
         return None
 
-# Selecionar as melhores moedas com base no sentimento e dados do mercado
+# Selecionar melhores moedas considerando sentimento e mercado
 def selecionar_melhores_moedas(client, sentimento, saldo_disponivel):
-    moedas_possiveis = ['BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'SOLUSDT']
-    moedas_avaliadas = [avaliar_moeda(client, moeda) for moeda in moedas_possiveis]
-    moedas_avaliadas = [m for m in moedas_avaliadas if m]
+    moedas_possiveis = config.get('moedas_monitoradas', ['BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'SOLUSDT'])
+    avaliadas = filter(None, [avaliar_moeda(client, moeda) for moeda in moedas_possiveis])
 
-    # Filtro por saldo disponível
+    # Filtro de saldo disponível (exemplo com 0.001 mínimo)
     moedas_filtradas = []
-    for moeda in moedas_avaliadas:
-        preco_atual = buscar_preco(moeda['moeda'])
-        if saldo_disponivel >= preco_atual * 0.001:  # Exemplo: 0.001 unidade mínima
+    for moeda in avaliadas:
+        preco = buscar_preco(client, moeda['moeda'])
+        if saldo_disponivel >= preco * 0.001:
             moedas_filtradas.append(moeda)
 
     moedas_filtradas.sort(key=lambda x: x['variacao_percentual'], reverse=True)
 
     if sentimento > 0.5:
         return [m['moeda'] for m in moedas_filtradas[:3]]
-    elif 0 < sentimento <= 0.5:
+    elif sentimento > 0:
         return [m['moeda'] for m in moedas_filtradas[:2]]
     else:
         return [m['moeda'] for m in moedas_filtradas[-2:]]
 
-# Verificar o valor mínimo de compra
-async def verificar_minimo_compra(moeda):
-    url = "https://api.binance.com/api/v3/exchangeInfo"
+# Buscar preço atual
+def buscar_preco(client, par_moeda):
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                response.raise_for_status()
-                data = await response.json()
-                for symbol in data['symbols']:
-                    if symbol['symbol'] == moeda:
-                        for filtro in symbol['filters']:
-                            if filtro['filterType'] == 'MIN_NOTIONAL':
-                                return float(filtro['minNotional'])
-                logger.warning(f"⚠️ Moeda {moeda} não encontrada ou sem filtro MIN_NOTIONAL.")
-                return None
+        ticker = client.get_symbol_ticker(symbol=par_moeda)
+        return float(ticker['price'])
     except Exception as e:
-        logger.error(f"Erro ao verificar mínimo de compra para {moeda}: {e}")
-        return None
+        logger.error(f"Erro ao buscar preço de {par_moeda}: {e}")
+        return 0.0
 
-# Buscar informações da Binance
+# Buscar informações da Binance para o par
 async def buscar_informacoes_binance(symbol):
     url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol}"
     try:
@@ -117,24 +124,31 @@ async def buscar_informacoes_binance(symbol):
         logger.error(f"Erro ao buscar informações da Binance para {symbol}: {e}")
         return None
 
-# Função principal para processar notícias e moedas
+# Processamento completo de notícias e moedas
 async def processar_noticias(client):
     noticias = await buscar_noticias()
     if not noticias:
-        logger.warning("Nenhuma notícia encontrada para análise.")
+        logger.warning("⚠️ Nenhuma notícia encontrada para análise.")
         return
 
     sentimento_geral = analisar_sentimento(noticias)
-    logger.info(f"Sentimento geral das notícias: {sentimento_geral}")
-
     acao, risco = ajustar_variaveis(sentimento_geral)
-    logger.info(f"Ação sugerida: {acao}, Risco: {risco}")
 
-    melhores_moedas = selecionar_melhores_moedas(client, sentimento_geral)
-    logger.info(f"Melhores moedas para negociação: {melhores_moedas}")
+    logger.info(f"📊 Sentimento: {sentimento_geral:.2f} | Ação sugerida: {acao} | Risco: {risco:.3%}")
+
+    melhores_moedas = selecionar_melhores_moedas(client, sentimento_geral, verificar_saldo(client))
+    logger.info(f"💰 Moedas sugeridas: {melhores_moedas}")
 
     for moeda in melhores_moedas:
-        min_notional = await verificar_minimo_compra(moeda)
-        informacoes = await buscar_informacoes_binance(moeda)
-        if informacoes:
-            logger.info(f"Informações para {moeda}: {informacoes}")
+        info = await buscar_informacoes_binance(moeda)
+        if info:
+            logger.info(f"📈 Dados 24h {moeda}: {info}")
+
+# Verificar saldo (necessário para filtro de moedas)
+def verificar_saldo(client):
+    try:
+        saldo = client.get_asset_balance(asset='USDT')
+        return float(saldo['free'])
+    except Exception as e:
+        logger.error(f"Erro ao verificar saldo: {e}")
+        return 0.0

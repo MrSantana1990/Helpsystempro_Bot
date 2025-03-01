@@ -1,0 +1,12 @@
+aiohttp
+binance
+python-dotenv
+python-telegram-bot
+pandas
+numpy
+textblob
+pyyaml
+streamlit
+cachetools
+python-binance
+

@@ -1,0 +1,64 @@
+# Define se o bot opera em Testnet (true) ou na conta real (false)
+testnet: true
+
+# Definição de horários estratégicos de operação (horário UTC)
+# Permite definir múltiplos intervalos para melhor controle
+horarios_estrategicos:
+  - [9, 12]   # 9h às 12h UTC
+  - [23, 2]   # 23h às 2h UTC
+
+# Intervalo em segundos entre ciclos de execução
+intervalo_execucao: 30
+
+# Intervalo em segundos para pausa fora do horário estratégico
+intervalo_pausa: 300
+
+# Parâmetros da estratégia de análise técnica
+rsi_periodo: 14
+rsi_compra: 30
+rsi_venda: 70
+
+# Parâmetros de gestão de risco
+stop_loss_percentual: 2.0
+take_profit_percentual: 5.0
+minimo_usdt_por_ordem: 5.0
+maximo_exposicao_por_ordem: 0.25  # Máximo de 25% do saldo total por ordem
+
+# Moedas monitoradas pelo bot (permite expansão fácil)
+moedas_monitoradas:
+  - BTCUSDT
+  - ETHUSDT
+  - XRPUSDT
+  - BNBUSDT
+  - DOGEUSDT
+  - SOLUSDT
+
+# Configuração de logs e auditoria
+logs:
+  nivel: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  rotacao_diaria: true
+  backup_logs: 7  # Quantidade de arquivos de backup a manter (últimos 7 dias)
+
+# Limite de notificações para evitar spam (10 por minuto)
+limite_notificacoes_por_minuto: 10
+
+# Monitoramento e métricas
+monitoramento_ativo: true  # Ativa acompanhamento de PnL diário e relatório automático
+
+# Configuração de volume mínimo e máximo para trade (flexível)
+quantidade_minima_trade: 0.001
+quantidade_maxima_trade: 0.5
+
+# Futuros parâmetros de IA ou Machine Learning (placeholder para expansão)
+ia_ativa: true
+ia_modelo: "baseline"  # Pode ser "baseline", "mlp", "reinforcement"
+
+# Configuração de alertas críticos
+alerta_critico_ativo: true
+alerta_critico_destinatarios:
+  - "thiago"
+  - "rodolfo"
+
+# Configuração de idioma e formato
+idioma_interface: "pt-br"
+formato_data: "%d/%m/%Y %H:%M:%S"
