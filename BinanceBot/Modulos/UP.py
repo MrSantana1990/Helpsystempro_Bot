@@ -2,8 +2,8 @@ import os
 import subprocess
 import requests
 import yaml
-from dotenv import load_dotenv
 import logging
+from dotenv import load_dotenv
 
 # Configurar Logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -11,95 +11,82 @@ logger = logging.getLogger(__name__)
 
 # Carregar configuração do repositório
 def carregar_config():
-    with open("configs/up_config.yml", "r", encoding="utf-8") as f:
+    config_path = os.path.join("Configs", "up_config.yml")
+    with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 config = carregar_config()
 
 # Carregar Token do GitHub (via env ou arquivo seguro)
-load_dotenv("configs/keys.env")
+dotenv_path = os.path.join("Configs", "key.env")
+load_dotenv(dotenv_path)
+
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
+if not GITHUB_TOKEN:
+    raise ValueError("❌ GITHUB_TOKEN não configurado corretamente no arquivo key.env")
+
 # Função para rodar comandos Git
-def run_git_command(command):
+def rodar_comando(comando, erro_msg):
     try:
-        subprocess.run(command, check=True, shell=True, cwd=config['repo_dir'])
-        return True
+        resultado = subprocess.run(comando, shell=True, check=True, capture_output=True, text=True)
+        logger.info(resultado.stdout)
+        return resultado.stdout
     except subprocess.CalledProcessError as e:
-        logger.error(f"Erro ao executar comando Git: {e}")
-        return False
+        logger.error(f"{erro_msg}: {e.stderr}")
+        raise
 
-# Atualizar .gitignore automaticamente
-def atualizar_gitignore():
-    gitignore_path = os.path.join(config['repo_dir'], ".gitignore")
-    if os.path.exists(gitignore_path):
-        with open(gitignore_path, "r+") as gitignore:
-            conteudo = gitignore.read()
-            for ignore_dir in config['ignore_dirs']:
-                if ignore_dir not in conteudo:
-                    gitignore.write(f"\n{ignore_dir}/\n")
-                    logger.info(f"Diretório '{ignore_dir}' adicionado ao .gitignore.")
+# Função para realizar commit e push
+def realizar_commit_push():
+    mensagem_commit = input("Digite a mensagem de commit: ")
+
+    rodar_comando(f'git add .', "Erro ao adicionar arquivos")
+    rodar_comando(f'git commit -m "{mensagem_commit}"', "Erro ao realizar commit")
+
+    try:
+        rodar_comando("git push origin master", "Erro ao enviar código para o GitHub")
+    except subprocess.CalledProcessError:
+        logger.warning("⚠️ Falha no push. Tentando git pull --rebase para corrigir...")
+        rodar_comando("git pull --rebase origin master", "Erro ao realizar pull --rebase")
+        rodar_comando("git push origin master", "Erro ao enviar código para o GitHub após rebase")
+
+# Menu de opções
+def menu():
+    print("Escolha uma opção:")
+    print("1 - Tornar repositório privado")
+    print("2 - Tornar repositório público")
+    print("3 - Realizar commit e push")
+    print("4 - Checar última versão")
+
+    opcao = input("Opção: ")
+
+    if opcao == "1":
+        alterar_privacidade_repo(True)
+    elif opcao == "2":
+        alterar_privacidade_repo(False)
+    elif opcao == "3":
+        realizar_commit_push()
+    elif opcao == "4":
+        checar_ultima_versao()
     else:
-        with open(gitignore_path, "w") as gitignore:
-            for ignore_dir in config['ignore_dirs']:
-                gitignore.write(f"{ignore_dir}/\n")
-        logger.info(".gitignore criado e diretórios adicionados.")
+        print("Opção inválida.")
 
-# Alterar visibilidade do repositório
-def change_repo_visibility(visibility):
-    url = f"https://api.github.com/repos/{config['repo_name']}"
-    data = {"private": visibility == '1'}
+# Função para alterar privacidade do repositório
+def alterar_privacidade_repo(privado):
+    api_url = f"https://api.github.com/repos/{config['github']['usuario']}/{config['github']['repositorio']}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
 
-    response = requests.patch(url, json=data, headers=headers)
-    if response.status_code == 200:
-        logger.info(f"Repositório agora é {'Privado' if visibility == '1' else 'Público'}.")
-    else:
-        logger.error(f"Erro ao alterar visibilidade: {response.status_code} - {response.text}")
+    response = requests.patch(api_url, json={"private": privado}, headers=headers)
 
-# Checar última versão do repositório
+    if response.status_code == 200:
+        logger.info(f"Repositório {'privado' if privado else 'público'} com sucesso.")
+    else:
+        logger.error(f"Erro ao alterar privacidade: {response.text}")
+
+# Função para checar última versão (git fetch + log simplificado)
 def checar_ultima_versao():
-    url = f"https://api.github.com/repos/{config['repo_name']}/releases/latest"
-    response = requests.get(url)
-    if response.status_code == 200:
-        versao = response.json().get('tag_name')
-        logger.info(f"Última versão disponível no GitHub: {versao}")
-    else:
-        logger.warning("Não foi possível consultar a última versão no GitHub.")
-
-# Processo principal de atualização
-def executar_update():
-    atualizar_gitignore()
-
-    logger.info("Verificando status do repositório...")
-    run_git_command("git status")
-
-    opcao = input("Escolha uma opção:\n1 - Tornar repositório privado\n2 - Tornar repositório público\n3 - Realizar commit e push\n4 - Checar última versão\nOpção: ")
-
-    if opcao in ['1', '2']:
-        if not GITHUB_TOKEN:
-            logger.error("GITHUB_TOKEN não encontrado. Adicione ao arquivo .env.")
-            return
-        change_repo_visibility(opcao)
-
-    elif opcao == '3':
-        commit_message = input("Digite a mensagem de commit: ")
-        if run_git_command("git add ."):
-            if run_git_command(f"git commit -m \"{commit_message}\""):
-                if run_git_command("git push origin master"):
-                    logger.info("Código enviado para o GitHub com sucesso.")
-                else:
-                    logger.error("Erro ao enviar código para o GitHub.")
-            else:
-                logger.error("Erro ao realizar commit.")
-        else:
-            logger.error("Erro ao adicionar arquivos.")
-
-    elif opcao == '4':
-        checar_ultima_versao()
-
-    else:
-        logger.warning("Opção inválida.")
+    rodar_comando("git fetch origin", "Erro ao buscar atualizações do repositório")
+    rodar_comando("git log origin/master -n 1", "Erro ao obter última versão")
 
 if __name__ == "__main__":
-    executar_update()
+    menu()
