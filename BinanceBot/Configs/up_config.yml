@@ -1,4 +1,6 @@
-repo_dir: "C:/Users/Rodolfo Santana/Documents/GitHub"
 repo_name: "MrSantana1990/Helpsystempro_Bot"
+repo_dir: "C:/Users/Rodolfo Santana/Documents/GitHub/BinanceBot"
 ignore_dirs:
-  - "painel"
+  - Logs
+  - Configs
+  - Reports
