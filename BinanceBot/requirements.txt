@@ -1,0 +1,11 @@
+aiohttp
+cachetools
+numpy
+pandas
+PyYAML
+python-binance
+python-dotenv
+python-telegram-bot
+requests
+streamlit
+textblob

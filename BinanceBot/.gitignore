@@ -1,0 +1,4 @@
+Logs/
+Reports/
+Configs/key.env
+Configs/*.env
