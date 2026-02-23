@@ -29,5 +29,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1
 
 ## Documentação
 - Manual geral: `docs/MANUAL.md`
+- Manual comercial: `docs/MANUAL_COMERCIAL.md`
 - Modelo de chaves: `BinanceBot/Configs/key.env.example`
-
