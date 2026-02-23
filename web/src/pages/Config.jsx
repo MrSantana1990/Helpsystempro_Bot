@@ -12,6 +12,51 @@ const ENV_FIELDS = [
   { k: "TELEGRAM_CHAT_ID", label: "Telegram Chat ID", hint: "Opcional (alertas).", optional: true }
 ];
 
+const PROFILES = {
+  conservador: {
+    label: "Conservador",
+    values: {
+      buy_threshold: 0.55,
+      avoid_threshold: -0.25,
+      stop_loss_percentual: 1.5,
+      take_profit_percentual: 3.0,
+      max_moedas_por_ciclo: 2,
+      max_open_positions: 2,
+      minimo_usdt_por_ordem: 8,
+      discovery_min_score: 0.65,
+      discovery_max_new_per_day: 2
+    }
+  },
+  padrao: {
+    label: "Padrão",
+    values: {
+      buy_threshold: 0.45,
+      avoid_threshold: -0.2,
+      stop_loss_percentual: 2.0,
+      take_profit_percentual: 5.0,
+      max_moedas_por_ciclo: 3,
+      max_open_positions: 3,
+      minimo_usdt_por_ordem: 5,
+      discovery_min_score: 0.55,
+      discovery_max_new_per_day: 3
+    }
+  },
+  agressivo: {
+    label: "Agressivo",
+    values: {
+      buy_threshold: 0.35,
+      avoid_threshold: -0.15,
+      stop_loss_percentual: 3.0,
+      take_profit_percentual: 7.0,
+      max_moedas_por_ciclo: 4,
+      max_open_positions: 5,
+      minimo_usdt_por_ordem: 5,
+      discovery_min_score: 0.5,
+      discovery_max_new_per_day: 5
+    }
+  }
+};
+
 export default function Config({ token, setToken }) {
   const [st, setSt] = useState(null);
   const [show, setShow] = useState(false);
@@ -25,6 +70,7 @@ export default function Config({ token, setToken }) {
     TELEGRAM_CHAT_ID: ""
   });
   const [settings, setSettings] = useState("{}");
+  const [profile, setProfile] = useState("padrao");
   const [simple, setSimple] = useState({
     testnet: true,
     moedas_monitoradas_csv: "BTCUSDT,ETHUSDT",
@@ -162,6 +208,13 @@ export default function Config({ token, setToken }) {
     setSettingsMsg("OK: modo simples aplicado no editor. Agora clique em “Salvar settings.yml”.");
   };
 
+  const applyProfile = () => {
+    const p = PROFILES[profile]?.values;
+    if (!p) return;
+    setSimple((prev) => ({ ...prev, ...p }));
+    setSettingsMsg(`OK: perfil aplicado (${PROFILES[profile]?.label || profile}). Agora clique em “Aplicar no editor (JSON)” e depois “Salvar settings.yml”.`);
+  };
+
   return (
     <div className="flex flex-col gap-3">
       <Card
@@ -242,6 +295,27 @@ export default function Config({ token, setToken }) {
       <Card title="Passo 2 — settings.yml">
         <div className="text-sm text-white/70">
           Modo simples: ajuste os campos principais e aplique no editor. Depois clique em <span className="font-semibold">Salvar settings.yml</span>.
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <div className="text-xs text-white/60">Perfil (atalho)</div>
+            <select
+              className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-white/25"
+              value={profile}
+              onChange={(e) => setProfile(e.target.value)}
+            >
+              <option value="conservador">Conservador</option>
+              <option value="padrao">Padrão</option>
+              <option value="agressivo">Agressivo</option>
+            </select>
+            <div className="mt-1 text-xs text-white/40">
+              Perfis só mudam limites/thresholds. Não existe garantia de lucro.
+            </div>
+          </div>
+          <Button variant="secondary" onClick={() => applyProfile()}>
+            Aplicar perfil
+          </Button>
         </div>
 
         <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">

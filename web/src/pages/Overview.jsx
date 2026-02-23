@@ -13,6 +13,7 @@ export default function Overview({ token, botOn }) {
   const [mini, setMini] = useState([]);
   const [news, setNews] = useState(null);
   const [acct, setAcct] = useState(null);
+  const [reg, setReg] = useState(null);
   const [portfolio, setPortfolio] = useState([]);
   const [pfAsset, setPfAsset] = useState("BTC");
   const [pfQty, setPfQty] = useState("");
@@ -24,13 +25,14 @@ export default function Overview({ token, botOn }) {
 
   const refresh = async (sym = marketSymbol) => {
     setErr("");
-    const [ovv, fxr, tkr, kln, acctR, pfR] = await Promise.all([
+    const [ovv, fxr, tkr, kln, acctR, pfR, regR] = await Promise.all([
       apiGet("/api/overview"),
       apiGet("/api/market/usdtbrl"),
       apiGet("/api/market/tickers?symbols=" + encodeURIComponent("BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT")),
       apiGet("/api/market/klines?symbol=" + encodeURIComponent(sym) + "&interval=15m&limit=64"),
       apiGet("/api/account/summary").catch(() => null),
-      apiGet("/api/portfolio").catch(() => ({ rows: [] }))
+      apiGet("/api/portfolio").catch(() => ({ rows: [] })),
+      apiGet("/api/symbols/registry").catch(() => null)
     ]);
     setOv(ovv);
     setFx(fxr);
@@ -38,6 +40,7 @@ export default function Overview({ token, botOn }) {
     setMini(kln.closes || []);
     setAcct(acctR);
     setPortfolio((pfR && pfR.rows) || []);
+    setReg(regR);
     setMarketSymbol(sym);
     apiGet("/api/news?term=crypto&limit=6").then(setNews).catch(() => {});
   };
@@ -135,6 +138,7 @@ export default function Overview({ token, botOn }) {
             <Badge>trades: {ov?.counts?.trades ?? "-"}</Badge>
             <Badge>decisões: {ov?.counts?.decisions ?? "-"}</Badge>
             <Badge>abertas: {ov?.counts?.open_positions ?? "-"}</Badge>
+            <Badge tone={(reg?.pending || []).length ? "warn" : "neutral"}>pendentes: {(reg?.pending || []).length ?? "-"}</Badge>
             <Badge tone={botOn ? "good" : "neutral"}>bot: {botOn ? "ON" : "OFF"}</Badge>
           </div>
         }

@@ -28,6 +28,7 @@ export default function Decisions() {
   const [sel, setSel] = useState("");
   const [onlyLatest, setOnlyLatest] = useState(true);
   const [q, setQ] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all"); // all | auto | discovery
   const [err, setErr] = useState("");
 
   const refresh = async () => {
@@ -57,13 +58,16 @@ export default function Decisions() {
   const listRows = useMemo(() => {
     const base = onlyLatest ? latestBySymbol : rows;
     const qq = String(q || "").trim().toUpperCase();
-    if (!qq) return base;
     return base.filter((r) => {
       const sym = String(r.symbol || "").toUpperCase();
       const act = String(r.action || "").toUpperCase();
-      return sym.includes(qq) || act.includes(qq);
+      const det = parseDetails(r) || {};
+      const src = String(det.source || "").toLowerCase();
+      const okSource = sourceFilter === "all" ? true : src === sourceFilter;
+      const okQuery = !qq ? true : sym.includes(qq) || act.includes(qq);
+      return okSource && okQuery;
     });
-  }, [onlyLatest, latestBySymbol, q, rows]);
+  }, [onlyLatest, latestBySymbol, q, rows, sourceFilter]);
 
   useEffect(() => {
     if (sel) return;
@@ -74,6 +78,8 @@ export default function Decisions() {
   const details = row ? parseDetails(row) : null;
   const explain = details?.explain || details?.why || details?.rationale || null;
   const signals = details?.signals || details?.features || details || {};
+  const source = String(details?.source || "").toLowerCase() || "-";
+  const authorized = details?.authorized;
 
   const topPick = useMemo(() => {
     const candidates = latestBySymbol.filter((r) => String(r.action || "").toUpperCase() === "BUY");
@@ -161,6 +167,18 @@ export default function Decisions() {
                 Só última por moeda
               </label>
             </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="text-xs text-white/60">Fonte:</div>
+              <select
+                className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-xs outline-none focus:border-white/25"
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+              >
+                <option value="all">todas</option>
+                <option value="auto">auto</option>
+                <option value="discovery">discovery</option>
+              </select>
+            </div>
 
             <div className="mt-3 max-h-[560px] overflow-auto rounded-xl border border-white/10">
               {listRows.length === 0 ? (
@@ -169,6 +187,9 @@ export default function Decisions() {
                 <div className="flex flex-col">
                   {listRows.map((r) => {
                     const active = String(r.id) === String(sel);
+                    const det = parseDetails(r) || {};
+                    const src = String(det.source || "").toLowerCase() || "-";
+                    const auth = det.authorized;
                     return (
                       <button
                         key={r.id}
@@ -183,6 +204,10 @@ export default function Decisions() {
                           <div className="font-mono text-xs text-white/50">{String(r.ts_utc || "").slice(0, 19)}</div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            <Badge className="font-mono">{src}</Badge>
+                            {auth === false ? <Badge tone="warn">precisa OK</Badge> : null}
+                          </div>
                           <Badge tone={actionTone(r.action)} className="font-mono">
                             {String(r.action || "-")}
                           </Badge>
@@ -203,6 +228,8 @@ export default function Decisions() {
               </Badge>
               <Badge>score: {row ? fmtNumber(row.score, 3) : "-"}</Badge>
               <Badge>conf.: {row ? fmtNumber(row.confidence, 3) : "-"}</Badge>
+              <Badge className="font-mono">fonte: {source}</Badge>
+              {authorized === false ? <Badge tone="warn">não autorizado</Badge> : authorized === true ? <Badge tone="good">autorizado</Badge> : null}
               <Badge className="font-mono">id: {row?.id ?? "-"}</Badge>
             </div>
 
@@ -254,4 +281,3 @@ export default function Decisions() {
     </div>
   );
 }
-

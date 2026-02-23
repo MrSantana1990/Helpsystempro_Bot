@@ -47,3 +47,14 @@ weights:
   sentiment: 0.1
 news_term: crypto
 db_path: data/trading.sqlite3
+
+# ----------------- Discovery (novas moedas) -----------------
+# O bot pode "explorar" oportunidades fora de moedas_monitoradas.
+# Importante: ele NÃO compra moedas novas sem aprovação do usuário no painel.
+discovery_enabled: true
+discovery_limit: 20
+discovery_min_quote_volume: 5000000
+discovery_min_score: 0.55
+discovery_max_new_per_day: 3
+discovery_cooldown_hours: 24
+discovery_exclude_bases: []
