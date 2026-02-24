@@ -65,7 +65,7 @@ Arquivo: `BinanceBot/Configs/key.env`
 
 Campos:
 - `API_KEY` / `API_SECRET` (Binance) — necessário para **trades reais/testnet**
-- `NEWS_API_KEY` — habilita módulo de notícias
+- `NEWS_API_KEY` — **opcional** (habilita módulo de notícias)
 - `TELEGRAM_API_KEY` / `TELEGRAM_CHAT_ID` — **opcional** (alertas)
 
 Modelo: `BinanceBot/Configs/key.env.example`
@@ -98,7 +98,24 @@ Itens principais:
 
 ### Conta real (alto risco)
 - Para operar com `testnet: false`, é obrigatório definir `HSP_LIVE_TRADING=1`.
+- Para operar com ordens reais (LIVE), é obrigatório também ter **licença offline válida** (assinada) instalada em `data/license.json` (ou `HSP_LICENSE_PATH`).
 - Recomenda-se: travas extras + validações + limites conservadores.
+
+### Licença offline (LIVE)
+O sistema usa um arquivo JSON assinado (RSA) para habilitar LIVE:
+- Endpoint: `GET /api/license/status`
+- UI: menu **Saúde → Licença**
+
+Para o cliente gerar o machine hash desta máquina:
+```powershell
+cd D:\DEV\Helpsystempro_Bot
+python .\scripts\license_tool.py machine-hash
+```
+
+Para o vendedor assinar uma licença (private key fora do repo):
+```powershell
+python .\scripts\license_tool.py sign --private-key C:\caminho\private_key.pem --plan Pro --expires-at 2026-12-31T00:00:00Z --machine-hash <HASH_DO_CLIENTE> --out .\data\license.json
+```
 
 ---
 
@@ -115,6 +132,7 @@ Em **LIVE** (`testnet: false`), esses limites são **obrigatórios**.
 
 Endpoint útil:
 - `GET /api/risk/daily` (estatísticas do dia + decisão “ok_to_buy”)
+- `GET /api/pnl/realized` (PnL realizado FIFO + fees, quando disponíveis)
 
 ## 4) Aprovações de novas moedas (Discovery)
 
@@ -163,9 +181,15 @@ No **Painel de Controle**:
 ## 7) Boas práticas e prevenção de problemas
 
 - **Nunca commitar** `key.env` (segredos).
+- Logs passam por redaction automática (não imprime `API_SECRET`).
 - Comece com **dry-run** e **testnet**.
 - Use limites conservadores em `settings.yml`.
 - Se as portas estiverem ocupadas (`8501/8502`), rode `.\run_local.ps1` de novo (ele tenta encerrar processos que travam as portas).
+
+### Exportação (auditoria)
+No menu **Saúde**, você pode baixar:
+- `audit.csv` (eventos de auditoria)
+- `trades.csv` (trades do SQLite)
 
 ---
 

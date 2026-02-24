@@ -8,6 +8,7 @@ import Decisions from "./pages/Decisions.jsx";
 import News from "./pages/News.jsx";
 import Bot from "./pages/Bot.jsx";
 import Config from "./pages/Config.jsx";
+import Health from "./pages/Health.jsx";
 import { apiGet, apiPost } from "./lib/api.js";
 
 function useToken() {
@@ -49,7 +50,8 @@ export default function App() {
       decisions: <Decisions token={token} />,
       news: <News token={token} />,
       bot: <Bot token={token} setToken={setToken} />,
-      config: <Config token={token} setToken={setToken} />
+      config: <Config token={token} setToken={setToken} />,
+      health: <Health token={token} />
     }),
     [token, botOn, setToken]
   );

@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+import csv
+import io
 import os
 import time
 import json
+import socket
 import subprocess
 import sys
 import platform
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import requests
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from BinanceBot.Modulos.mock_data import generate_mock
 from BinanceBot.Modulos.paths import logs_dir
@@ -23,6 +27,8 @@ from BinanceBot.Modulos.env_flags import env_flag, get_runtime_flags
 from BinanceBot.Modulos.audit_log import append_audit_event, audit_path
 from BinanceBot.Modulos.kill_switch import clear_kill_switch, engage_kill_switch, read_kill_switch
 from BinanceBot.Modulos.risk_limits import compute_daily_risk_stats, evaluate_risk_limits
+from BinanceBot.Modulos.pnl import compute_realized_fifo, expand_executions, load_trades
+from BinanceBot.Modulos.license import get_license_status, save_license_obj
 
 
 REPO_DIR = Path(__file__).resolve().parents[1]
@@ -31,6 +37,7 @@ DATA_DIR = REPO_DIR / "data"
 
 
 app = FastAPI(title="HelpSystem Portal API", version="1.0")
+API_STARTED_AT = time.time()
 
 _BINANCE_BASE = "https://api.binance.com"
 _cache: dict[str, tuple[float, Any]] = {}
@@ -71,7 +78,7 @@ def _request_token(request: Request) -> str | None:
 async def local_first_guard(request: Request, call_next):  # type: ignore[no-untyped-def]
     flags = get_runtime_flags()
 
-    # Local-first: bloqueia acesso remoto por padrÃ£o.
+    # Local-first: bloqueia acesso remoto por padrão.
     if bool(flags.get("local_only", True)):
         host = request.client.host if request.client else ""
         if host not in {"127.0.0.1", "::1"}:
@@ -79,13 +86,13 @@ async def local_first_guard(request: Request, call_next):  # type: ignore[no-unt
 
     # Opcional: auth global (para futura VPS dedicada).
     if bool(flags.get("enable_auth", False)) and request.url.path.startswith("/api/"):
-        # MantÃ©m health pÃºblico para smoke test local.
+        # Mantém health público para smoke test local.
         if request.url.path == "/api/health":
             return await call_next(request)
         expected = os.getenv("HSP_PORTAL_TOKEN") or ""
         token = _request_token(request)
         if not expected or token != expected:
-            return JSONResponse(status_code=403, content={"detail": "Token invÃ¡lido."})
+            return JSONResponse(status_code=403, content={"detail": "Token inválido."})
 
     return await call_next(request)
 
@@ -127,6 +134,9 @@ def _validate_settings_payload(payload: dict[str, Any]) -> None:
     _ensure("take_profit_percentual", (int, float))
     _ensure("risk_max_daily_buy_quote_usdt", (int, float))
     _ensure("risk_max_daily_loss_usdt", (int, float))
+    _ensure("risk_max_orders_per_day", (int, float))
+    _ensure("risk_max_exposure_quote_usdt_per_symbol", (int, float))
+    _ensure("risk_max_drawdown_usdt", (int, float))
     if "moedas_monitoradas" in payload and not isinstance(payload["moedas_monitoradas"], list):
         raise HTTPException(status_code=400, detail="Campo inválido: moedas_monitoradas (esperado lista).")
 
@@ -342,6 +352,34 @@ def health() -> dict[str, Any]:
     return {"ok": True}
 
 
+def _port_listening(host: str, port: int, timeout_s: float = 0.2) -> bool:
+    try:
+        with socket.create_connection((host, int(port)), timeout=timeout_s):
+            return True
+    except Exception:
+        return False
+
+
+@app.get("/api/license/status")
+def license_status() -> dict[str, Any]:
+    return get_license_status()
+
+
+@app.post("/api/license/save")
+def license_save(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
+    _require_token(token)
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Payload inválido.")
+    p = save_license_obj(payload)
+    append_audit_event(
+        event="license.save",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={"path": str(p)},
+    )
+    return {"ok": True, "path": str(p), "status": get_license_status()}
+
+
 @app.post("/api/mock")
 def mock(seed: int = 42) -> dict[str, Any]:
     storage = Storage()
@@ -445,6 +483,16 @@ def bot_start(
                 detail="Segurança: settings.yml está com testnet=false, mas HSP_LIVE_TRADING não está habilitado. "
                 "Para operar em conta real, defina HSP_LIVE_TRADING=1 e reinicie.",
             )
+        # Licença: bloqueia LIVE se inválida/expirada (dry-run/testnet não exigem).
+        if not bool(dry_run):
+            lic = get_license_status()
+            if not bool(lic.get("valid", False)):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Licença inválida para LIVE: "
+                    + str(lic.get("reason") or "verifique a licença")
+                    + " (veja Configurações → Licença).",
+                )
         # limites obrigatórios em live
         max_buy_quote = float(settings.get("risk_max_daily_buy_quote_usdt", 0.0) or 0.0)
         max_daily_loss = float(settings.get("risk_max_daily_loss_usdt", 0.0) or 0.0)
@@ -514,11 +562,159 @@ def risk_daily() -> dict[str, Any]:
             "buy_quote_usdt": stats.buy_quote_usdt,
             "sell_quote_usdt": stats.sell_quote_usdt,
             "realized_pnl_usdt": stats.realized_pnl_usdt,
-            "trades_count": stats.trades_count,
+            "fees_usdt": stats.fees_usdt,
+            "orders_count": stats.orders_count,
+            "executions_count": stats.executions_count,
+            "drawdown_usdt_est": stats.drawdown_usdt_est,
         },
         "limits": decision.limits,
         "ok_to_buy": decision.ok_to_buy,
         "reason": decision.reason,
+    }
+
+
+@app.get("/api/pnl/realized")
+def pnl_realized(
+    days: int = Query(30, ge=1, le=365),
+    limit: int = Query(200000, ge=100, le=500000),
+) -> dict[str, Any]:
+    """
+    PnL realizado (FIFO) com fees quando disponíveis (fills/commission).
+    Breakdown por símbolo e por trade/order.
+    """
+    storage = Storage()
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=int(days))).replace(microsecond=0)
+    trades = load_trades(storage, start_utc=start.isoformat(), end_utc=None, limit=int(limit))
+    executions = []
+    for t in trades:
+        executions.extend(expand_executions(t))
+    out = compute_realized_fifo(executions, price_fetch_usdt=_public_price)
+    out["range"] = {"days": int(days), "start_utc": start.isoformat(), "end_utc": now.isoformat(), "limit": int(limit)}
+    return out
+
+
+@app.get("/api/export/audit.csv")
+def export_audit_csv(token: str | None = None) -> StreamingResponse:
+    _require_token(token)
+    p = Path(audit_path())
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="audit.jsonl não encontrado.")
+
+    def gen():  # type: ignore[no-untyped-def]
+        header = ["ts_utc", "event", "client_host", "token_fp", "detail_json"]
+        out = io.StringIO()
+        w = csv.writer(out)
+        w.writerow(header)
+        yield out.getvalue()
+
+        with p.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = (line or "").strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                row = [
+                    obj.get("ts_utc"),
+                    obj.get("event"),
+                    obj.get("client_host"),
+                    obj.get("token_fp"),
+                    json.dumps(obj.get("detail") or {}, ensure_ascii=False),
+                ]
+                out = io.StringIO()
+                w = csv.writer(out)
+                w.writerow(row)
+                yield out.getvalue()
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="audit.csv"'},
+    )
+
+
+@app.get("/api/export/trades.csv")
+def export_trades_csv(token: str | None = None, limit: int = Query(200000, ge=100, le=500000)) -> StreamingResponse:
+    _require_token(token)
+    storage = Storage()
+
+    def gen():  # type: ignore[no-untyped-def]
+        header = ["id", "ts_utc", "symbol", "side", "qty", "price", "quote_qty", "status", "order_id"]
+        out = io.StringIO()
+        w = csv.writer(out)
+        w.writerow(header)
+        yield out.getvalue()
+
+        q = "SELECT id, ts_utc, symbol, side, qty, price, quote_qty, status, order_id FROM trades ORDER BY id ASC LIMIT ?"
+        with storage._connect() as con:  # noqa: SLF001
+            rows = con.execute(q, (int(limit),)).fetchall()
+        for r in rows:
+            out = io.StringIO()
+            w = csv.writer(out)
+            w.writerow(list(r))
+            yield out.getvalue()
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="trades.csv"'},
+    )
+
+
+@app.get("/api/ops/health")
+def ops_health() -> dict[str, Any]:
+    """
+    Saúde operacional (Local-first):
+    - uptime do servidor
+    - status do bot/pid
+    - último ciclo/erro (bot_runtime.json)
+    - portas (8501/8502) listening
+    - risco diário + licença
+    """
+    storage = Storage()
+    runtime_path = DATA_DIR / "bot_runtime.json"
+    runtime = {}
+    try:
+        if runtime_path.exists():
+            runtime = json.loads(runtime_path.read_text(encoding="utf-8", errors="replace"))
+    except Exception:
+        runtime = {}
+
+    risk = compute_daily_risk_stats(storage)
+    return {
+        "api": {
+            "started_at_utc": datetime.fromtimestamp(API_STARTED_AT, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
+            "uptime_s": round(time.time() - API_STARTED_AT, 3),
+            "python": sys.version.split(" ")[0],
+        },
+        "ports": {
+            "8501_panel_listening": _port_listening("127.0.0.1", 8501),
+            "8502_api_listening": _port_listening("127.0.0.1", 8502),
+        },
+        "bot": {**_bot_status(), "kill_switch": read_kill_switch()},
+        "runtime": runtime,
+        "license": get_license_status(),
+        "paths": {
+            "repo": str(REPO_DIR),
+            "db": str(storage.db_path),
+            "logs": str(logs_dir()),
+            "audit": str(audit_path()),
+            "runtime": str(runtime_path),
+        },
+        "risk_daily": {
+            "day_utc": risk.day_utc,
+            "buy_quote_usdt": risk.buy_quote_usdt,
+            "sell_quote_usdt": risk.sell_quote_usdt,
+            "realized_pnl_usdt": risk.realized_pnl_usdt,
+            "fees_usdt": risk.fees_usdt,
+            "orders_count": risk.orders_count,
+            "executions_count": risk.executions_count,
+            "drawdown_usdt_est": risk.drawdown_usdt_est,
+        },
+        "flags": get_runtime_flags(),
     }
 
 

@@ -21,7 +21,7 @@ async def buscar_noticias(termo='crypto'):
 
     api_key = load_env().news_api_key
     if not api_key:
-        logger.error("❌ API Key da NewsAPI não encontrada.")
+        logger.info("NewsAPI desativada: NEWS_API_KEY não configurada.")
         return []
 
     url = f"https://newsapi.org/v2/everything?q={termo}&language=pt&apiKey={api_key}"

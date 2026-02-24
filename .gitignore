@@ -25,6 +25,9 @@ BinanceBot/Reports/
 *.sqlite3
 *.db
 
+# Local license keys (never commit)
+keys/
+
 # Streamlit
 .streamlit/
 

@@ -9,7 +9,7 @@ from .paths import data_dir
 
 
 def _utc_now_iso() -> str:
-    # formato simples e ordenÃ¡vel
+    # formato simples e ordenável
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
@@ -49,4 +49,3 @@ def append_audit_event(
     except Exception:
         # auditoria nunca deve quebrar o sistema
         return
-

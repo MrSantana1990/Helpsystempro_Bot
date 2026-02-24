@@ -1,5 +1,5 @@
 import React from "react";
-import { BarChart3, Bot, Newspaper, Settings, Activity, FileText, Sparkles } from "lucide-react";
+import { BarChart3, Bot, Newspaper, Settings, Activity, FileText, Sparkles, HeartPulse } from "lucide-react";
 
 const items = [
   { key: "overview", label: "Painel de Controle", icon: BarChart3 },
@@ -8,6 +8,7 @@ const items = [
   { key: "decisions", label: "Decisões", icon: Sparkles },
   { key: "news", label: "Notícias", icon: Newspaper },
   { key: "bot", label: "Bot (Play)", icon: Bot },
+  { key: "health", label: "Saúde", icon: HeartPulse },
   { key: "config", label: "Configurações", icon: Settings }
 ];
 
@@ -44,4 +45,3 @@ export default function Sidebar({ active, onSelect, botOn }) {
     </aside>
   );
 }
-

@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import json
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -23,12 +25,34 @@ from Modulos.symbol_registry import approved_symbols, propose_symbol
 from Modulos.env_flags import env_flag
 from Modulos.kill_switch import engage_kill_switch, read_kill_switch
 from Modulos.risk_limits import evaluate_risk_limits
+from Modulos.license import require_live_license
+from Modulos.paths import data_dir
 
 logger = configurar_logger()
+
+_RUNTIME_PATH = data_dir() / "bot_runtime.json"
 
 
 _discover_cache: dict[str, Any] = {"ts": 0.0, "rows": []}
 
+
+def _utc_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _write_runtime(patch: dict[str, Any]) -> None:
+    try:
+        data_dir().mkdir(parents=True, exist_ok=True)
+        cur: dict[str, Any] = {}
+        if _RUNTIME_PATH.exists():
+            try:
+                cur = json.loads(_RUNTIME_PATH.read_text(encoding="utf-8", errors="replace"))
+            except Exception:
+                cur = {}
+        merged = {**cur, **patch, "pid": os.getpid()}
+        _RUNTIME_PATH.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        return
 
 def _discover_usdt_symbols(*, limit: int, min_quote_volume: float) -> list[dict[str, Any]]:
     """
@@ -115,6 +139,9 @@ def _make_binance_client(settings: dict, *, allow_public: bool) -> Client:
                 "testnet=false, mas HSP_LIVE_TRADING não está habilitado. "
                 "Para operar em conta real, defina HSP_LIVE_TRADING=1."
             )
+        # licença offline: bloqueia LIVE (ordens reais) se inválida/expirada
+        if not allow_public:
+            require_live_license()
     return Client(env.api_key, env.api_secret, testnet=testnet)
 
 
@@ -147,6 +174,8 @@ async def _notify(text: str, level: str = "INFO") -> None:
 
 
 async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
+    cycle_start = time.time()
+    _write_runtime({"last_cycle_start_utc": _utc_iso(), "last_error": None})
     settings = load_settings()
 
     now_hour = datetime.now(timezone.utc).hour
@@ -155,6 +184,7 @@ async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
         logger.info("Fora do horário estratégico (UTC=%s). Pausando %ss...", now_hour, pause)
         await _notify(f"Fora do horário estratégico (UTC={now_hour}). Bot pausado por {pause}s.")
         await asyncio.sleep(pause)
+        _write_runtime({"last_cycle_end_utc": _utc_iso(), "last_cycle_duration_s": round(time.time() - cycle_start, 3)})
         return
 
     _sync_binance_time(client)
@@ -168,6 +198,13 @@ async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
         logger.info("Saldo USDT (free): %.4f", balance)
         if balance < float(settings.get("minimo_usdt_por_ordem", 5.0)):
             await _notify("Saldo insuficiente para operar.", level="CRITICO")
+            _write_runtime(
+                {
+                    "last_cycle_end_utc": _utc_iso(),
+                    "last_cycle_duration_s": round(time.time() - cycle_start, 3),
+                    "last_block_reason": "saldo_insuficiente",
+                }
+            )
             return
     else:
         await _notify("Modo análise: sem API_KEY/API_SECRET, não executa compras/vendas.", level="INFO")
@@ -180,6 +217,7 @@ async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
     auto_symbols = [str(x).strip().upper() for x in (settings.get("moedas_monitoradas") or []) if str(x).strip()]
     if not auto_symbols:
         logger.warning("Nenhuma moeda configurada em moedas_monitoradas.")
+        _write_runtime({"last_cycle_end_utc": _utc_iso(), "last_cycle_duration_s": round(time.time() - cycle_start, 3)})
         return
 
     # Descoberta (novas moedas): avalia possibilidades, mas só compra quando o usuário aprovar no painel.
@@ -264,10 +302,24 @@ async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
     if bool(ks.get("enabled", False)):
         logger.warning("KILL SWITCH ativo. Nenhuma compra será executada neste ciclo. Motivo: %s", ks.get("reason"))
         await _notify(f"KILL SWITCH ativo: {ks.get('reason') or 'ativo'}. Novas compras bloqueadas.", level="CRITICO")
+        _write_runtime(
+            {
+                "last_cycle_end_utc": _utc_iso(),
+                "last_cycle_duration_s": round(time.time() - cycle_start, 3),
+                "last_block_reason": "kill_switch",
+            }
+        )
         return
 
     if not candidates or not can_trade:
         logger.info("Nenhuma oportunidade de compra neste ciclo.")
+        _write_runtime(
+            {
+                "last_cycle_end_utc": _utc_iso(),
+                "last_cycle_duration_s": round(time.time() - cycle_start, 3),
+                "last_block_reason": "no_candidates_or_no_trade",
+            }
+        )
         return
 
     # Limites de risco (Local-first): antes de abrir novas posições.
@@ -276,6 +328,13 @@ async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
         engage_kill_switch(reason=risk.reason, source="auto")
         await _notify(f"KILL SWITCH (auto): {risk.reason}", level="CRITICO")
         logger.warning("Compras bloqueadas por risco: %s", risk.reason)
+        _write_runtime(
+            {
+                "last_cycle_end_utc": _utc_iso(),
+                "last_cycle_duration_s": round(time.time() - cycle_start, 3),
+                "last_block_reason": risk.reason,
+            }
+        )
         return
 
     open_syms = storage.open_symbols()
@@ -283,28 +342,90 @@ async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
         candidates = [d for d in candidates if d.symbol not in open_syms]
         if not candidates:
             logger.info("Oportunidades existem, mas já há posição aberta nos símbolos candidatos: %s", sorted(open_syms))
+            _write_runtime(
+                {
+                    "last_cycle_end_utc": _utc_iso(),
+                    "last_cycle_duration_s": round(time.time() - cycle_start, 3),
+                    "last_block_reason": "open_symbols_block",
+                }
+            )
             return
 
     max_open = int(settings.get("max_open_positions", 3))
     if len(open_syms) >= max_open:
         logger.info("Máximo de posições abertas atingido (%s).", max_open)
         await _notify(f"Máximo de posições abertas atingido ({max_open}).", level="INFO")
+        _write_runtime(
+            {
+                "last_cycle_end_utc": _utc_iso(),
+                "last_cycle_duration_s": round(time.time() - cycle_start, 3),
+                "last_block_reason": "max_open_positions",
+            }
+        )
         return
+
+    # Hard-limit: respeita slots antes de comprar (evita estourar max_open_positions no mesmo ciclo).
+    slots = max(0, max_open - len(open_syms))
+    candidates = candidates[:slots]
 
     allocation = allocate_usdt(balance, len(candidates))
     await _notify(f"Alocação por ordem: {allocation.usdt:.2f} USDT ({allocation.reason})")
 
+    max_orders_per_day = int(risk.limits.get("risk_max_orders_per_day", 0.0) or 0)
+    max_buy_quote = float(risk.limits.get("risk_max_daily_buy_quote_usdt", 0.0) or 0.0)
+    max_exposure_symbol = float(settings.get("risk_max_exposure_quote_usdt_per_symbol", 0.0) or 0.0)
+    min_usdt = float(settings.get("minimo_usdt_por_ordem", 5.0) or 0.0)
+
+    planned_quote = 0.0
+    placed = 0
+
     for d in candidates:
+        if max_orders_per_day > 0 and (int(risk.stats.orders_count) + placed) >= max_orders_per_day:
+            await _notify(f"Limite de ordens/dia atingido ({max_orders_per_day}).", level="INFO")
+            break
+
+        remaining_quote = None
+        if max_buy_quote > 0:
+            remaining_quote = max(0.0, max_buy_quote - float(risk.stats.buy_quote_usdt) - planned_quote)
+            if remaining_quote <= 0:
+                await _notify(f"Limite diário de compras atingido ({max_buy_quote:.2f} USDT).", level="INFO")
+                break
+
+        order_budget = float(allocation.usdt)
+        if max_exposure_symbol > 0:
+            order_budget = min(order_budget, max_exposure_symbol)
+        if remaining_quote is not None:
+            order_budget = min(order_budget, remaining_quote)
+
+        if order_budget < max(0.0, min_usdt):
+            logger.info("Budget por ordem abaixo do mínimo (%.2f < %.2f). Pulando %s.", order_budget, min_usdt, d.symbol)
+            continue
+
         price = _symbol_price(client, d.symbol)
         await executar_compra(
             client,
             d.symbol,
-            allocation.usdt,
+            order_budget,
             price,
             lambda m: _notify(m, level="INFO"),
             dry_run=dry_run,
             storage=storage,
         )
+        placed += 1
+        planned_quote += float(order_budget)
+        open_syms.add(d.symbol)  # pessimista: evita ultrapassar max_open_positions no mesmo ciclo
+        if len(open_syms) >= max_open:
+            break
+
+    _write_runtime(
+        {
+            "last_cycle_end_utc": _utc_iso(),
+            "last_cycle_duration_s": round(time.time() - cycle_start, 3),
+            "last_cycle_candidates": [c.symbol for c in candidates],
+            "last_cycle_buys_planned_usdt": round(planned_quote, 6),
+            "last_block_reason": None,
+        }
+    )
 
 async def run_mock_cycle(storage: Storage, *, seed: int = 42) -> None:
     generate_mock(storage, seed=seed)
@@ -324,6 +445,7 @@ async def run_forever(*, dry_run: bool) -> None:
             await run_cycle(client, storage, dry_run=dry_run)
         except Exception as e:
             logger.exception("Erro no ciclo: %s", e)
+            _write_runtime({"last_error": str(e), "last_error_at_utc": _utc_iso()})
             await _notify(f"Erro no ciclo: {e}", level="CRITICO")
             await asyncio.sleep(10)
         await asyncio.sleep(interval)

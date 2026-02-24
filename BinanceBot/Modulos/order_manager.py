@@ -120,31 +120,103 @@ async def executar_compra(
             )
         return
 
+    def _enrich_order_with_hs(ordem: dict, *, symbol: str) -> dict:
+        """
+        Normaliza métricas de execução:
+        - executed_qty / quote_qty (cummulativeQuoteQty)
+        - avg_price (quote/qty)
+        - fills com fee_usdt (best-effort)
+        """
+        try:
+            base = symbol.upper().replace("USDT", "")
+            quote = "USDT"
+        except Exception:
+            base, quote = symbol, "USDT"
+
+        executed_qty = float(ordem.get("executedQty") or ordem.get("origQty") or 0.0)
+        quote_qty = float(ordem.get("cummulativeQuoteQty") or 0.0)
+        avg_price = (quote_qty / executed_qty) if executed_qty > 0 and quote_qty > 0 else None
+
+        fills = []
+        raw_fills = ordem.get("fills") if isinstance(ordem.get("fills"), list) else []
+        for f in raw_fills:
+            if not isinstance(f, dict):
+                continue
+            try:
+                f_qty = float(f.get("qty") or 0.0)
+                f_price = float(f.get("price") or 0.0)
+                comm = float(f.get("commission") or 0.0)
+                comm_asset = str(f.get("commissionAsset") or "").upper() or None
+            except Exception:
+                continue
+            fee_usdt = None
+            if comm_asset == "USDT":
+                fee_usdt = comm
+            elif comm_asset == base and f_price > 0 and quote == "USDT":
+                fee_usdt = comm * f_price
+            elif comm_asset:
+                # tenta converter via ticker público na própria Binance (já temos client autenticado)
+                try:
+                    px = float(client.get_symbol_ticker(symbol=f"{comm_asset}USDT")["price"])
+                    if px > 0:
+                        fee_usdt = comm * px
+                except Exception:
+                    fee_usdt = None
+
+            fills.append(
+                {
+                    "qty": f_qty,
+                    "price": f_price,
+                    "commission": comm,
+                    "commissionAsset": comm_asset,
+                    "fee_usdt": float(fee_usdt) if fee_usdt is not None and fee_usdt > 0 else None,
+                }
+            )
+
+        ordem = dict(ordem)
+        ordem.setdefault("_hs", {})
+        if isinstance(ordem["_hs"], dict):
+            ordem["_hs"].update(
+                {
+                    "executed_qty": executed_qty if executed_qty > 0 else None,
+                    "quote_qty": quote_qty if quote_qty > 0 else None,
+                    "avg_price": avg_price,
+                    "fills": fills,
+                }
+            )
+        return ordem
+
     try:
         ordem = client.order_market_buy(symbol=par_moeda, quantity=quantidade)
+        ordem_hs = _enrich_order_with_hs(ordem, symbol=par_moeda)
+
+        # Preferir métricas reais de execução quando disponíveis
+        executed_qty = float(ordem_hs.get("_hs", {}).get("executed_qty") or ordem.get("executedQty") or quantidade)
+        quote_qty = float(ordem_hs.get("_hs", {}).get("quote_qty") or ordem.get("cummulativeQuoteQty") or valor_ordem)
+        avg_price = float(ordem_hs.get("_hs", {}).get("avg_price") or (quote_qty / executed_qty if executed_qty else preco_atual))
 
         if storage is not None:
             storage.record_trade(
                 make_trade(
                     symbol=par_moeda,
                     side="BUY",
-                    qty=float(quantidade),
-                    price=float(preco_atual),
-                    quote_qty=float(valor_ordem),
+                    qty=float(executed_qty),
+                    price=float(avg_price),
+                    quote_qty=float(quote_qty),
                     status=str(ordem.get("status", "FILLED")),
                     order_id=str(ordem.get("orderId")) if ordem.get("orderId") is not None else None,
-                    raw=ordem,
+                    raw=ordem_hs,
                 )
             )
         logger.info(f"🟢 Ordem de compra executada: {ordem}")
-        await enviar_mensagem_telegram(f"🟢 Compra executada: {quantidade} {par_moeda} a {preco_atual:.2f} USDT")
+        await enviar_mensagem_telegram(f"🟢 Compra executada: {executed_qty:.8f} {par_moeda} a {avg_price:.6f} USDT")
 
         asyncio.create_task(
             monitorar_pos_compra(
                 client,
                 par_moeda,
-                float(quantidade),
-                preco_atual,
+                float(executed_qty),
+                float(avg_price),
                 enviar_mensagem_telegram,
                 storage=storage,
             )
@@ -219,21 +291,76 @@ async def executar_venda(
         logger.info("Ordem de venda executada: %s", ordem)
 
         if storage is not None:
-            last_price = float(client.get_symbol_ticker(symbol=par_moeda)["price"])
+            # Usa métricas reais de execução quando disponíveis
+            executed_qty = float(ordem.get("executedQty") or ordem.get("origQty") or quantidade)
+            quote_qty = float(ordem.get("cummulativeQuoteQty") or 0.0) or (float(executed_qty) * float(client.get_symbol_ticker(symbol=par_moeda)["price"]))
+            avg_price = (quote_qty / executed_qty) if executed_qty > 0 else float(client.get_symbol_ticker(symbol=par_moeda)["price"])
+
+            # Reaproveita a mesma normalização de fills/fees do BUY
+            try:
+                base = par_moeda.upper().replace("USDT", "")
+                quote = "USDT"
+            except Exception:
+                base, quote = par_moeda, "USDT"
+            fills = []
+            raw_fills = ordem.get("fills") if isinstance(ordem.get("fills"), list) else []
+            for f in raw_fills:
+                if not isinstance(f, dict):
+                    continue
+                try:
+                    f_qty = float(f.get("qty") or 0.0)
+                    f_price = float(f.get("price") or 0.0)
+                    comm = float(f.get("commission") or 0.0)
+                    comm_asset = str(f.get("commissionAsset") or "").upper() or None
+                except Exception:
+                    continue
+                fee_usdt = None
+                if comm_asset == "USDT":
+                    fee_usdt = comm
+                elif comm_asset == base and f_price > 0 and quote == "USDT":
+                    fee_usdt = comm * f_price
+                elif comm_asset:
+                    try:
+                        px = float(client.get_symbol_ticker(symbol=f"{comm_asset}USDT")["price"])
+                        if px > 0:
+                            fee_usdt = comm * px
+                    except Exception:
+                        fee_usdt = None
+                fills.append(
+                    {
+                        "qty": f_qty,
+                        "price": f_price,
+                        "commission": comm,
+                        "commissionAsset": comm_asset,
+                        "fee_usdt": float(fee_usdt) if fee_usdt is not None and fee_usdt > 0 else None,
+                    }
+                )
+
+            ordem_hs = dict(ordem)
+            ordem_hs.setdefault("_hs", {})
+            if isinstance(ordem_hs["_hs"], dict):
+                ordem_hs["_hs"].update(
+                    {
+                        "executed_qty": executed_qty if executed_qty > 0 else None,
+                        "quote_qty": quote_qty if quote_qty > 0 else None,
+                        "avg_price": avg_price,
+                        "fills": fills,
+                    }
+                )
             storage.record_trade(
                 make_trade(
                     symbol=par_moeda,
                     side="SELL",
-                    qty=float(quantidade),
-                    price=float(last_price),
-                    quote_qty=float(float(quantidade) * last_price),
+                    qty=float(executed_qty),
+                    price=float(avg_price),
+                    quote_qty=float(quote_qty),
                     status=str(ordem.get("status", "FILLED")),
                     order_id=str(ordem.get("orderId")) if ordem.get("orderId") is not None else None,
-                    raw=ordem,
+                    raw=ordem_hs,
                 )
             )
 
-        mensagem = f"🔴 Venda de {quantidade} {par_moeda} realizada ({motivo})."
+        mensagem = f"🔴 Venda de {float(ordem.get('executedQty') or quantidade):.8f} {par_moeda} realizada ({motivo})."
         await enviar_mensagem_telegram(mensagem)
 
     except Exception as e:

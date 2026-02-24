@@ -7,7 +7,7 @@ import { apiGet, apiPost } from "../lib/api.js";
 const ENV_FIELDS = [
   { k: "API_KEY", label: "Binance API Key", hint: "Obrigatório para rodar o bot real.", optional: false },
   { k: "API_SECRET", label: "Binance API Secret", hint: "Obrigatório para rodar o bot real.", optional: false },
-  { k: "NEWS_API_KEY", label: "NewsAPI Key", hint: "Habilita o módulo de notícias.", optional: false },
+  { k: "NEWS_API_KEY", label: "NewsAPI Key", hint: "Opcional (notícias). Sem isso, o bot roda sem notícias.", optional: true },
   { k: "TELEGRAM_API_KEY", label: "Telegram Bot Token", hint: "Opcional (alertas).", optional: true },
   { k: "TELEGRAM_CHAT_ID", label: "Telegram Chat ID", hint: "Opcional (alertas).", optional: true }
 ];
@@ -26,6 +26,9 @@ const PROFILES = {
       maximo_exposicao_por_ordem: 0.2,
       risk_max_daily_buy_quote_usdt: 30,
       risk_max_daily_loss_usdt: 3,
+      risk_max_orders_per_day: 8,
+      risk_max_exposure_quote_usdt_per_symbol: 15,
+      risk_max_drawdown_usdt: 0,
       discovery_min_score: 0.65,
       discovery_max_new_per_day: 2
     }
@@ -43,6 +46,9 @@ const PROFILES = {
       maximo_exposicao_por_ordem: 0.25,
       risk_max_daily_buy_quote_usdt: 50,
       risk_max_daily_loss_usdt: 5,
+      risk_max_orders_per_day: 12,
+      risk_max_exposure_quote_usdt_per_symbol: 25,
+      risk_max_drawdown_usdt: 0,
       discovery_min_score: 0.55,
       discovery_max_new_per_day: 3
     }
@@ -60,6 +66,9 @@ const PROFILES = {
       maximo_exposicao_por_ordem: 0.3,
       risk_max_daily_buy_quote_usdt: 80,
       risk_max_daily_loss_usdt: 8,
+      risk_max_orders_per_day: 20,
+      risk_max_exposure_quote_usdt_per_symbol: 40,
+      risk_max_drawdown_usdt: 0,
       discovery_min_score: 0.5,
       discovery_max_new_per_day: 5
     }
@@ -92,6 +101,9 @@ export default function Config({ token, setToken }) {
     max_open_positions: 3,
     risk_max_daily_buy_quote_usdt: 50,
     risk_max_daily_loss_usdt: 5,
+    risk_max_orders_per_day: 12,
+    risk_max_exposure_quote_usdt_per_symbol: 25,
+    risk_max_drawdown_usdt: 0,
     buy_threshold: 0.45,
     avoid_threshold: -0.2,
     stop_loss_percentual: 2,
@@ -137,6 +149,15 @@ export default function Config({ token, setToken }) {
       risk_max_daily_loss_usdt: Number.isFinite(Number(s.risk_max_daily_loss_usdt))
         ? Number(s.risk_max_daily_loss_usdt)
         : p.risk_max_daily_loss_usdt,
+      risk_max_orders_per_day: Number.isFinite(Number(s.risk_max_orders_per_day))
+        ? Number(s.risk_max_orders_per_day)
+        : p.risk_max_orders_per_day,
+      risk_max_exposure_quote_usdt_per_symbol: Number.isFinite(Number(s.risk_max_exposure_quote_usdt_per_symbol))
+        ? Number(s.risk_max_exposure_quote_usdt_per_symbol)
+        : p.risk_max_exposure_quote_usdt_per_symbol,
+      risk_max_drawdown_usdt: Number.isFinite(Number(s.risk_max_drawdown_usdt))
+        ? Number(s.risk_max_drawdown_usdt)
+        : p.risk_max_drawdown_usdt,
       buy_threshold: Number.isFinite(Number(s.buy_threshold)) ? Number(s.buy_threshold) : p.buy_threshold,
       avoid_threshold: Number.isFinite(Number(s.avoid_threshold)) ? Number(s.avoid_threshold) : p.avoid_threshold,
       stop_loss_percentual: Number.isFinite(Number(s.stop_loss_percentual)) ? Number(s.stop_loss_percentual) : p.stop_loss_percentual,
@@ -213,6 +234,9 @@ export default function Config({ token, setToken }) {
     obj.max_open_positions = Number(simple.max_open_positions);
     obj.risk_max_daily_buy_quote_usdt = Number(simple.risk_max_daily_buy_quote_usdt);
     obj.risk_max_daily_loss_usdt = Number(simple.risk_max_daily_loss_usdt);
+    obj.risk_max_orders_per_day = Number(simple.risk_max_orders_per_day);
+    obj.risk_max_exposure_quote_usdt_per_symbol = Number(simple.risk_max_exposure_quote_usdt_per_symbol);
+    obj.risk_max_drawdown_usdt = Number(simple.risk_max_drawdown_usdt);
     obj.buy_threshold = Number(simple.buy_threshold);
     obj.avoid_threshold = Number(simple.avoid_threshold);
     obj.stop_loss_percentual = Number(simple.stop_loss_percentual);
@@ -464,6 +488,51 @@ export default function Config({ token, setToken }) {
                 min={0}
                 step="0.5"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-xs text-white/60">Limite ordens/dia (0=off)</div>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                value={simple.risk_max_orders_per_day}
+                onChange={(e) => setSimple((p) => ({ ...p, risk_max_orders_per_day: Number(e.target.value) }))}
+                type="number"
+                min={0}
+                step="1"
+              />
+            </div>
+            <div>
+              <div className="text-xs text-white/60">Exposição máx./símbolo (USDT, 0=off)</div>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                value={simple.risk_max_exposure_quote_usdt_per_symbol}
+                onChange={(e) => setSimple((p) => ({ ...p, risk_max_exposure_quote_usdt_per_symbol: Number(e.target.value) }))}
+                type="number"
+                min={0}
+                step="1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-xs text-white/60">Drawdown estimado (USDT, 0=off)</div>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                value={simple.risk_max_drawdown_usdt}
+                onChange={(e) => setSimple((p) => ({ ...p, risk_max_drawdown_usdt: Number(e.target.value) }))}
+                type="number"
+                min={0}
+                step="0.5"
+              />
+              <div className="mt-1 text-xs text-white/40">Se o drawdown estimado atingir o limite, ativa kill switch automático.</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/10 p-3 text-xs text-white/60">
+              <div className="font-semibold text-white/70">Modo Piloto</div>
+              <div className="mt-1">Recomendado: comece com <b>dry-run</b> e <b>testnet</b>.</div>
+              <div className="mt-1">LIVE exige <span className="font-mono">HSP_LIVE_TRADING=1</span> e licença ativa.</div>
             </div>
           </div>
 

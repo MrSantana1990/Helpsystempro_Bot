@@ -9,20 +9,26 @@ export default function Bot({ token, setToken }) {
   const [status, setStatus] = useState(null);
   const [reg, setReg] = useState(null);
   const [risk, setRisk] = useState(null);
+  const [cfg, setCfg] = useState(null);
+  const [lic, setLic] = useState(null);
   const [ksReason, setKsReason] = useState("");
   const [msg, setMsg] = useState("");
   const [dryRun, setDryRun] = useState(true);
   const [approveMode, setApproveMode] = useState("24h"); // 24h | 7d | forever
 
   const refresh = async () => {
-    const [r, rr, rk] = await Promise.all([
+    const [r, rr, rk, rc, rl] = await Promise.all([
       apiGet("/api/bot/status", { token }),
       apiGet("/api/symbols/registry", { token }).catch(() => null),
-      apiGet("/api/risk/daily", { token }).catch(() => null)
+      apiGet("/api/risk/daily", { token }).catch(() => null),
+      apiGet("/api/config/status", { token }).catch(() => null),
+      apiGet("/api/license/status", { token }).catch(() => null)
     ]);
     setStatus(r);
     setReg(rr);
     setRisk(rk);
+    setCfg(rc);
+    setLic(rl);
     return r;
   };
 
@@ -39,13 +45,28 @@ export default function Bot({ token, setToken }) {
       setMsg("KILL SWITCH ativo: desative antes de iniciar.");
       return;
     }
+    const testnet = cfg?.settings?.testnet !== false;
+    const liveIntent = !dryRun && !testnet;
+
     if (!dryRun) {
-      const ok = window.confirm(
-        "ATENÇÃO: você está iniciando o bot para enviar ordens (não é simulação). " +
-          "Use testnet primeiro. Deseja continuar?"
-      );
+      const ok = window.confirm("ATENÇÃO: você está iniciando o bot para enviar ordens (não é simulação). Use testnet primeiro. Deseja continuar?");
       if (!ok) return;
     }
+
+    if (liveIntent) {
+      const liveEnabled = !!(cfg?.flags?.live_trading_enabled || cfg?.flags?.live_mode);
+      if (!liveEnabled) {
+        setMsg("LIVE bloqueado: habilite HSP_LIVE_TRADING=1 e reinicie o backend.");
+        return;
+      }
+      if (!lic?.valid) {
+        setMsg("LIVE bloqueado: licença inválida/expirada. Veja Saúde → Licença.");
+        return;
+      }
+      const t = window.prompt('CONFIRMAÇÃO EXTRA (LIVE): digite "LIVE" para continuar.');
+      if (String(t || "").trim().toUpperCase() !== "LIVE") return;
+    }
+
     await apiPost("/api/bot/start", { token, query: { dry_run: dryRun, once: false } });
     setMsg(dryRun ? "Play OK (dry-run / análise)." : "Play OK (ordens habilitadas).");
     await refresh();
@@ -120,6 +141,8 @@ export default function Bot({ token, setToken }) {
           <Badge>pid: {status?.pid ?? "-"}</Badge>
           <Badge className="font-mono">args: {status?.state?.args ? String(status.state.args) : "-"}</Badge>
           <Badge tone={killOn ? "bad" : "neutral"}>kill: {killOn ? "ON" : "OFF"}</Badge>
+          <Badge tone={cfg?.settings?.testnet === false ? "warn" : "neutral"}>testnet: {cfg?.settings?.testnet === false ? "false" : "true"}</Badge>
+          <Badge tone={lic?.valid ? "good" : "warn"}>licença: {lic?.valid ? "ATIVA" : (lic?.status || "-")}</Badge>
         </div>
         {msg ? <div className="mt-3 text-sm text-white/70">{msg}</div> : null}
       </Card>
