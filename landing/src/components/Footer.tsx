@@ -1,6 +1,14 @@
 import Container from "./Container";
 
-export default function Footer({ brandName, portfolioUrl }: { brandName: string; portfolioUrl: string }) {
+export default function Footer({
+  brandName,
+  portfolioUrl,
+  githubUrl
+}: {
+  brandName: string;
+  portfolioUrl: string;
+  githubUrl?: string;
+}) {
   const year = new Date().getFullYear();
   return (
     <footer className="mt-16 border-t border-border/10 py-10">
@@ -17,6 +25,16 @@ export default function Footer({ brandName, portfolioUrl }: { brandName: string;
             <a href="#compliance" className="focus-ring rounded-lg text-sm text-muted hover:text-text">
               Disclaimers
             </a>
+            {githubUrl ? (
+              <a
+                href={githubUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="focus-ring rounded-lg text-sm text-muted hover:text-text"
+              >
+                GitHub
+              </a>
+            ) : null}
             <a
               href={portfolioUrl}
               target="_blank"
@@ -36,4 +54,3 @@ export default function Footer({ brandName, portfolioUrl }: { brandName: string;
     </footer>
   );
 }
-

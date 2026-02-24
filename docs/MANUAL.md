@@ -4,6 +4,11 @@ Este projeto entrega um **bot de trading** + um **portal moderno (React)** para 
 
 > Aviso importante: **não existe garantia de lucro**. Use **testnet** e **dry-run** para validar antes de operar em conta real.
 
+Links:
+- Portfólio / site: https://helpsystempro.netlify.app/
+- WhatsApp (implantação): +55 11 94002-5492
+- GitHub: https://github.com/MrSantana1990
+
 ---
 
 ## 1) Rodar localmente (Windows / PowerShell)

@@ -4,6 +4,11 @@ Este documento é focado em **posicionamento, venda, implantação e discurso co
 
 > Aviso: **não existe garantia de lucro**. Evite promessas de retorno e use sempre linguagem de risco/validação.
 
+## Contato / Links
+- Portfólio / site: https://helpsystempro.netlify.app/
+- WhatsApp (implantação): +55 11 94002-5492
+- GitHub: https://github.com/MrSantana1990
+
 ---
 
 ## 1) Resumo do produto (1 minuto)
@@ -120,4 +125,3 @@ Venda como:
 - Relatórios automáticos (PDF/CSV) e “relatório semanal”
 - Perfis mais inteligentes (auto-tuning com limites)
 - Deploy oficial no blueprint HelpSystem Pro (Node/TS + Drive JSON + Netlify)
-

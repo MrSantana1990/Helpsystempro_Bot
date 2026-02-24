@@ -12,9 +12,10 @@ import Footer from "./components/Footer";
 import WhatsAppFab from "./components/WhatsAppFab";
 
 const CONFIG = {
-  whatsappPhone: "5599999999999",
+  whatsappPhone: "5511940025492",
   brandName: "HelpSystem Pro",
-  portfolioUrl: "https://seu-portfolio.com",
+  portfolioUrl: "https://helpsystempro.netlify.app/",
+  githubUrl: "https://github.com/MrSantana1990",
   priceStarter: "R$ 297/mês",
   pricePro: "R$ 497/mês",
   pricePremium: "R$ 997/mês"
@@ -84,9 +85,8 @@ export default function App() {
         <FinalCta whatsappPhone={CONFIG.whatsappPhone} whatsappBaseMessage={whatsappBaseMessage} />
       </main>
 
-      <Footer brandName={CONFIG.brandName} portfolioUrl={CONFIG.portfolioUrl} />
+      <Footer brandName={CONFIG.brandName} portfolioUrl={CONFIG.portfolioUrl} githubUrl={CONFIG.githubUrl} />
       <WhatsAppFab whatsappPhone={CONFIG.whatsappPhone} whatsappBaseMessage={whatsappBaseMessage} />
     </div>
   );
 }
-
