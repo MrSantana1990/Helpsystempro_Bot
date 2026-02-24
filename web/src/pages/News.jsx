@@ -5,14 +5,14 @@ import Badge from "../components/Badge.jsx";
 import { apiGet } from "../lib/api.js";
 import { fmtNumber } from "../lib/format.js";
 
-export default function News() {
+export default function News({ token }) {
   const [term, setTerm] = useState("crypto");
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
 
   const refresh = async () => {
     setErr("");
-    const r = await apiGet("/api/news?term=" + encodeURIComponent(term) + "&limit=18");
+    const r = await apiGet("/api/news?term=" + encodeURIComponent(term) + "&limit=18", { token });
     setData(r);
   };
 
@@ -89,4 +89,3 @@ export default function News() {
     </div>
   );
 }
-

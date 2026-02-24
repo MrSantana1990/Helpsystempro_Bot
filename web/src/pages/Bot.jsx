@@ -8,14 +8,21 @@ import { fmtNumber } from "../lib/format.js";
 export default function Bot({ token, setToken }) {
   const [status, setStatus] = useState(null);
   const [reg, setReg] = useState(null);
+  const [risk, setRisk] = useState(null);
+  const [ksReason, setKsReason] = useState("");
   const [msg, setMsg] = useState("");
   const [dryRun, setDryRun] = useState(true);
   const [approveMode, setApproveMode] = useState("24h"); // 24h | 7d | forever
 
   const refresh = async () => {
-    const [r, rr] = await Promise.all([apiGet("/api/bot/status"), apiGet("/api/symbols/registry").catch(() => null)]);
+    const [r, rr, rk] = await Promise.all([
+      apiGet("/api/bot/status", { token }),
+      apiGet("/api/symbols/registry", { token }).catch(() => null),
+      apiGet("/api/risk/daily", { token }).catch(() => null)
+    ]);
     setStatus(r);
     setReg(rr);
+    setRisk(rk);
     return r;
   };
 
@@ -24,9 +31,14 @@ export default function Bot({ token, setToken }) {
   }, []);
 
   const botOn = !!status?.running;
+  const killOn = !!status?.kill_switch?.enabled;
 
   const play = async () => {
     setMsg("");
+    if (killOn) {
+      setMsg("KILL SWITCH ativo: desative antes de iniciar.");
+      return;
+    }
     if (!dryRun) {
       const ok = window.confirm(
         "ATENÇÃO: você está iniciando o bot para enviar ordens (não é simulação). " +
@@ -43,6 +55,14 @@ export default function Bot({ token, setToken }) {
     setMsg("");
     await apiPost("/api/bot/stop", { token });
     setMsg("Stop OK.");
+    await refresh();
+  };
+
+  const killSwitchSet = async (enabled) => {
+    setMsg("");
+    const body = enabled ? { enabled: true, reason: ksReason || "manual" } : { enabled: false };
+    await apiPost("/api/bot/kill_switch", { token, body });
+    setMsg(enabled ? "KILL SWITCH ativado." : "KILL SWITCH desativado.");
     await refresh();
   };
 
@@ -99,8 +119,64 @@ export default function Bot({ token, setToken }) {
           <Badge tone={botOn ? "good" : "neutral"}>status: {botOn ? "rodando" : "parado"}</Badge>
           <Badge>pid: {status?.pid ?? "-"}</Badge>
           <Badge className="font-mono">args: {status?.state?.args ? String(status.state.args) : "-"}</Badge>
+          <Badge tone={killOn ? "bad" : "neutral"}>kill: {killOn ? "ON" : "OFF"}</Badge>
         </div>
         {msg ? <div className="mt-3 text-sm text-white/70">{msg}</div> : null}
+      </Card>
+
+      <Card
+        title="Risco (limites + kill switch)"
+        right={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => refresh().catch(() => {})}>
+              Recarregar
+            </Button>
+          </div>
+        }
+      >
+        <div className="text-sm text-white/70">
+          Local-first: a API roda em <b>localhost</b>. O kill switch bloqueia <b>novas compras</b> quando ativado (manual ou por limites).
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Badge>buy hoje: {risk?.stats ? fmtNumber(risk.stats.buy_quote_usdt, 2) : "-"} USDT</Badge>
+          <Badge>PnL hoje (realizado): {risk?.stats ? fmtNumber(risk.stats.realized_pnl_usdt, 2) : "-"} USDT</Badge>
+          <Badge>lim buy: {risk?.limits ? fmtNumber(risk.limits.risk_max_daily_buy_quote_usdt, 2) : "-"} USDT</Badge>
+          <Badge>lim loss: {risk?.limits ? fmtNumber(risk.limits.risk_max_daily_loss_usdt, 2) : "-"} USDT</Badge>
+          <Badge tone={risk?.ok_to_buy === false ? "warn" : "neutral"}>ok: {risk?.ok_to_buy === false ? "NÃO" : "SIM"}</Badge>
+        </div>
+
+        {risk?.reason && risk.reason !== "OK" ? (
+          <div className="mt-3 rounded-xl border border-yellow-500/25 bg-yellow-500/10 p-3 text-sm">{risk.reason}</div>
+        ) : null}
+
+        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto_auto] md:items-end">
+          <div>
+            <div className="text-xs text-white/60">Motivo (opcional)</div>
+            <input
+              className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-white/25"
+              value={ksReason}
+              onChange={(e) => setKsReason(e.target.value)}
+              placeholder="Ex.: pausa para ajuste de parâmetros"
+            />
+          </div>
+          <Button onClick={() => killSwitchSet(true).catch((e) => setMsg("Erro: " + e.message))} disabled={killOn}>
+            Ativar kill
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => killSwitchSet(false).catch((e) => setMsg("Erro: " + e.message))}
+            disabled={!killOn}
+          >
+            Desativar kill
+          </Button>
+        </div>
+
+        {killOn ? (
+          <div className="mt-3 text-xs text-white/60">
+            Motivo: <span className="font-mono">{String(status?.kill_switch?.reason || "-")}</span>
+          </div>
+        ) : null}
       </Card>
 
       <Card

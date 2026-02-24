@@ -5,13 +5,13 @@ import Badge from "../components/Badge.jsx";
 import { apiGet } from "../lib/api.js";
 import { fmtNumber, fmtPrice } from "../lib/format.js";
 
-export default function Trades() {
+export default function Trades({ token }) {
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState("");
 
   const refresh = async () => {
     setErr("");
-    const r = await apiGet("/api/trades?limit=200");
+    const r = await apiGet("/api/trades?limit=200", { token });
     setRows(r.rows || []);
   };
 
@@ -50,4 +50,3 @@ export default function Trades() {
     </div>
   );
 }
-

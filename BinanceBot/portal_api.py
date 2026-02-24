@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse, JSONResponse
 
 from BinanceBot.Modulos.mock_data import generate_mock
 from BinanceBot.Modulos.paths import logs_dir
@@ -19,6 +19,10 @@ from BinanceBot.Modulos.storage import Storage
 from BinanceBot.Modulos.config import load_env, load_settings
 from BinanceBot.Modulos.paths import config_dir
 from BinanceBot.Modulos.symbol_registry import decide_symbol, load_registry, registry_path
+from BinanceBot.Modulos.env_flags import env_flag, get_runtime_flags
+from BinanceBot.Modulos.audit_log import append_audit_event, audit_path
+from BinanceBot.Modulos.kill_switch import clear_kill_switch, engage_kill_switch, read_kill_switch
+from BinanceBot.Modulos.risk_limits import compute_daily_risk_stats, evaluate_risk_limits
 
 
 REPO_DIR = Path(__file__).resolve().parents[1]
@@ -44,6 +48,46 @@ _ENV_KEYS_ORDERED = [
 ]
 
 _PORTFOLIO_PATH = DATA_DIR / "portfolio.json"
+
+
+def _request_token(request: Request) -> str | None:
+    try:
+        qp = request.query_params.get("token")
+        if qp:
+            return str(qp)
+    except Exception:
+        pass
+    try:
+        auth = request.headers.get("authorization") or ""
+        if auth.lower().startswith("bearer "):
+            v = auth[7:].strip()
+            return v or None
+    except Exception:
+        pass
+    return None
+
+
+@app.middleware("http")
+async def local_first_guard(request: Request, call_next):  # type: ignore[no-untyped-def]
+    flags = get_runtime_flags()
+
+    # Local-first: bloqueia acesso remoto por padrÃ£o.
+    if bool(flags.get("local_only", True)):
+        host = request.client.host if request.client else ""
+        if host not in {"127.0.0.1", "::1"}:
+            return JSONResponse(status_code=403, content={"detail": "Acesso remoto desativado (Local-first)."})
+
+    # Opcional: auth global (para futura VPS dedicada).
+    if bool(flags.get("enable_auth", False)) and request.url.path.startswith("/api/"):
+        # MantÃ©m health pÃºblico para smoke test local.
+        if request.url.path == "/api/health":
+            return await call_next(request)
+        expected = os.getenv("HSP_PORTAL_TOKEN") or ""
+        token = _request_token(request)
+        if not expected or token != expected:
+            return JSONResponse(status_code=403, content={"detail": "Token invÃ¡lido."})
+
+    return await call_next(request)
 
 
 def _parse_env_text(env_text: str) -> dict[str, str]:
@@ -81,6 +125,8 @@ def _validate_settings_payload(payload: dict[str, Any]) -> None:
     _ensure("avoid_threshold", (int, float))
     _ensure("stop_loss_percentual", (int, float))
     _ensure("take_profit_percentual", (int, float))
+    _ensure("risk_max_daily_buy_quote_usdt", (int, float))
+    _ensure("risk_max_daily_loss_usdt", (int, float))
     if "moedas_monitoradas" in payload and not isinstance(payload["moedas_monitoradas"], list):
         raise HTTPException(status_code=400, detail="Campo inválido: moedas_monitoradas (esperado lista).")
 
@@ -360,17 +406,20 @@ def logs(lines: int = Query(300, ge=10, le=5000)) -> dict[str, Any]:
 
 @app.get("/api/bot/status")
 def bot_status() -> dict[str, Any]:
-    return _bot_status()
+    return {**_bot_status(), "kill_switch": read_kill_switch(), "flags": get_runtime_flags()}
 
 
 @app.post("/api/bot/start")
 def bot_start(
+    request: Request,
     token: str | None = None,
     dry_run: bool = True,
     once: bool = False,
 ) -> dict[str, Any]:
     # segurança: exige token para start/stop
     _require_token(token)
+    if bool(read_kill_switch().get("enabled", False)):
+        raise HTTPException(status_code=409, detail="KILL SWITCH ativo. Desative no painel para iniciar o bot.")
     # preflight: evita "parece que iniciou" mas o bot cai por config faltante
     env = load_env()
     missing: list[str] = []
@@ -390,19 +439,87 @@ def bot_start(
 
     settings = load_settings()
     if not bool(settings.get("testnet", True)):
-        if os.getenv("HSP_LIVE_TRADING") not in {"1", "true", "TRUE", "yes", "YES"}:
+        if not (env_flag("HSP_LIVE_TRADING", False) or env_flag("LIVE_MODE", False) or env_flag("HSP_LIVE_MODE", False)):
             raise HTTPException(
                 status_code=400,
                 detail="Segurança: settings.yml está com testnet=false, mas HSP_LIVE_TRADING não está habilitado. "
                 "Para operar em conta real, defina HSP_LIVE_TRADING=1 e reinicie.",
             )
+        # limites obrigatórios em live
+        max_buy_quote = float(settings.get("risk_max_daily_buy_quote_usdt", 0.0) or 0.0)
+        max_daily_loss = float(settings.get("risk_max_daily_loss_usdt", 0.0) or 0.0)
+        if max_buy_quote <= 0 or max_daily_loss <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Segurança: em LIVE (testnet=false), defina risk_max_daily_buy_quote_usdt e risk_max_daily_loss_usdt em settings.yml.",
+            )
+    append_audit_event(
+        event="bot.start",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={"dry_run": bool(dry_run), "once": bool(once), "testnet": bool(settings.get("testnet", True))},
+    )
     return _bot_start(dry_run=bool(dry_run), once=bool(once))
 
 
 @app.post("/api/bot/stop")
-def bot_stop(token: str | None = None) -> dict[str, Any]:
+def bot_stop(request: Request, token: str | None = None) -> dict[str, Any]:
     _require_token(token)
+    append_audit_event(
+        event="bot.stop",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={},
+    )
     return _bot_stop()
+
+
+@app.get("/api/bot/kill_switch")
+def bot_kill_switch() -> dict[str, Any]:
+    return {"state": read_kill_switch(), "path": str(DATA_DIR / "kill_switch.json")}
+
+
+@app.post("/api/bot/kill_switch")
+def bot_kill_switch_set(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
+    _require_token(token)
+    enabled = bool(payload.get("enabled", True))
+    reason = str(payload.get("reason") or "").strip() or "manual"
+    if enabled:
+        st = engage_kill_switch(reason=reason, source="manual")
+        append_audit_event(
+            event="kill_switch.engage",
+            token=token,
+            client_host=(request.client.host if request.client else None),
+            detail={"reason": reason},
+        )
+    else:
+        st = clear_kill_switch(source="manual")
+        append_audit_event(
+            event="kill_switch.clear",
+            token=token,
+            client_host=(request.client.host if request.client else None),
+            detail={},
+        )
+    return {"ok": True, "state": st}
+
+
+@app.get("/api/risk/daily")
+def risk_daily() -> dict[str, Any]:
+    storage = Storage()
+    stats = compute_daily_risk_stats(storage)
+    decision = evaluate_risk_limits(storage)
+    return {
+        "stats": {
+            "day_utc": stats.day_utc,
+            "buy_quote_usdt": stats.buy_quote_usdt,
+            "sell_quote_usdt": stats.sell_quote_usdt,
+            "realized_pnl_usdt": stats.realized_pnl_usdt,
+            "trades_count": stats.trades_count,
+        },
+        "limits": decision.limits,
+        "ok_to_buy": decision.ok_to_buy,
+        "reason": decision.reason,
+    }
 
 
 @app.post("/api/bot/recommend_topup")
@@ -517,7 +634,7 @@ def portfolio() -> dict[str, Any]:
 
 
 @app.post("/api/portfolio/save")
-def portfolio_save(payload: dict[str, Any], token: str | None = None) -> dict[str, Any]:
+def portfolio_save(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
     _require_token(token)
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Payload inválido.")
@@ -534,6 +651,12 @@ def portfolio_save(payload: dict[str, Any], token: str | None = None) -> dict[st
             continue
         cleaned.append({"asset": asset, "qty": qty})
     _write_portfolio(cleaned)
+    append_audit_event(
+        event="portfolio.save",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={"rows_count": len(cleaned), "assets": [r.get("asset") for r in cleaned][:40]},
+    )
     return {"ok": True, "rows": cleaned, "path": str(_PORTFOLIO_PATH)}
 
 
@@ -731,6 +854,8 @@ def config_status() -> dict[str, Any]:
     return {
         "settings_path": str(config_dir() / "settings.yml"),
         "env_path": str(env_path),
+        "audit_path": audit_path(),
+        "kill_switch_path": str(DATA_DIR / "kill_switch.json"),
         "env_exists": env_exists,
         "env_present": {
             "API_KEY": bool(env_values.get("API_KEY")),
@@ -741,6 +866,7 @@ def config_status() -> dict[str, Any]:
         },
         "settings": settings,
         "write_enabled": bool(os.getenv("HSP_PORTAL_TOKEN")),
+        "flags": get_runtime_flags(),
     }
 
 
@@ -774,7 +900,7 @@ def symbols_registry() -> dict[str, Any]:
 
 
 @app.post("/api/symbols/decide")
-def symbols_decide(payload: dict[str, Any], token: str | None = None) -> dict[str, Any]:
+def symbols_decide(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
     _require_token(token)
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Payload inválido.")
@@ -785,11 +911,17 @@ def symbols_decide(payload: dict[str, Any], token: str | None = None) -> dict[st
     r = decide_symbol(symbol=symbol, decision=decision, ttl_hours=ttl_hours, permanent=permanent)
     if not r.get("ok"):
         raise HTTPException(status_code=400, detail=f"Falha ao decidir: {r.get('error')}")
+    append_audit_event(
+        event="symbols.decide",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={"symbol": symbol, "decision": decision, "permanent": permanent, "ttl_hours": ttl_hours},
+    )
     return r
 
 
 @app.post("/api/config/save_settings")
-def save_settings(payload: dict[str, Any], token: str | None = None) -> dict[str, Any]:
+def save_settings(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
     _require_token(token)
     path = config_dir() / "settings.yml"
     # valida básico
@@ -805,11 +937,17 @@ def save_settings(payload: dict[str, Any], token: str | None = None) -> dict[str
         load_settings.cache_clear()  # type: ignore[attr-defined]
     except Exception:
         pass
+    append_audit_event(
+        event="config.save_settings",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={"path": str(path), "keys_count": len(payload.keys())},
+    )
     return {"ok": True, "path": str(path)}
 
 
 @app.post("/api/config/save_env")
-def save_env(payload: dict[str, Any], token: str | None = None) -> dict[str, Any]:
+def save_env(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
     _require_token(token)
     path = config_dir() / "key.env"
     if not isinstance(payload, dict):
@@ -842,6 +980,12 @@ def save_env(payload: dict[str, Any], token: str | None = None) -> dict[str, Any
         load_env.cache_clear()  # type: ignore[attr-defined]
     except Exception:
         pass
+    append_audit_event(
+        event="config.save_env",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={"path": str(path), "saved": written, "ignored_blank": ignored_blank},
+    )
     return {"ok": True, "path": str(path), "saved": written, "ignored_blank": ignored_blank}
 
 

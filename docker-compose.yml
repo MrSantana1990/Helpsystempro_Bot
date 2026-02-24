@@ -1,0 +1,22 @@
+services:
+  helpsystempro-bot:
+    build: .
+    ports:
+      - "127.0.0.1:8502:8502"
+    environment:
+      # Token do portal (start/stop/config).
+      HSP_PORTAL_TOKEN: "local-dev"
+
+      # Local-first em Docker: desliga o bloqueio por IP do middleware e confia no bind 127.0.0.1 do host.
+      HSP_LOCAL_ONLY: "0"
+
+      # Flags preparadas para evoluÃ§Ã£o futura (VPS dedicada):
+      BASE_URL: ""
+      ENABLE_AUTH: "0"
+      ENABLE_2FA: "0"
+      LIVE_MODE: "0"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./BinanceBot/Configs:/app/BinanceBot/Configs
+

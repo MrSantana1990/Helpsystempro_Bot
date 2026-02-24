@@ -40,6 +40,11 @@ max_moedas_por_ciclo: 3
 max_open_positions: 3
 buy_threshold: 0.45
 avoid_threshold: -0.2
+
+# ----------------- Risco (Local-first) -----------------
+# Para LIVE (testnet=false), limites sÃ£o obrigatÃ³rios.
+risk_max_daily_buy_quote_usdt: 50
+risk_max_daily_loss_usdt: 5
 weights:
   rsi: 0.45
   bollinger: 0.3

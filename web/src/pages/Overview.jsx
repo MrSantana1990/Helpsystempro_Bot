@@ -26,13 +26,13 @@ export default function Overview({ token, botOn }) {
   const refresh = async (sym = marketSymbol) => {
     setErr("");
     const [ovv, fxr, tkr, kln, acctR, pfR, regR] = await Promise.all([
-      apiGet("/api/overview"),
-      apiGet("/api/market/usdtbrl"),
-      apiGet("/api/market/tickers?symbols=" + encodeURIComponent("BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT")),
-      apiGet("/api/market/klines?symbol=" + encodeURIComponent(sym) + "&interval=15m&limit=64"),
-      apiGet("/api/account/summary").catch(() => null),
-      apiGet("/api/portfolio").catch(() => ({ rows: [] })),
-      apiGet("/api/symbols/registry").catch(() => null)
+      apiGet("/api/overview", { token }),
+      apiGet("/api/market/usdtbrl", { token }),
+      apiGet("/api/market/tickers?symbols=" + encodeURIComponent("BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT"), { token }),
+      apiGet("/api/market/klines?symbol=" + encodeURIComponent(sym) + "&interval=15m&limit=64", { token }),
+      apiGet("/api/account/summary", { token }).catch(() => null),
+      apiGet("/api/portfolio", { token }).catch(() => ({ rows: [] })),
+      apiGet("/api/symbols/registry", { token }).catch(() => null)
     ]);
     setOv(ovv);
     setFx(fxr);
@@ -42,7 +42,7 @@ export default function Overview({ token, botOn }) {
     setPortfolio((pfR && pfR.rows) || []);
     setReg(regR);
     setMarketSymbol(sym);
-    apiGet("/api/news?term=crypto&limit=6").then(setNews).catch(() => {});
+    apiGet("/api/news?term=crypto&limit=6", { token }).then(setNews).catch(() => {});
   };
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function Overview({ token, botOn }) {
 
   const refreshMarket = async (sym) => {
     setErr("");
-    const kln = await apiGet("/api/market/klines?symbol=" + encodeURIComponent(sym) + "&interval=15m&limit=64");
+    const kln = await apiGet("/api/market/klines?symbol=" + encodeURIComponent(sym) + "&interval=15m&limit=64", { token });
     setMarketSymbol(sym);
     setMini(kln.closes || []);
   };

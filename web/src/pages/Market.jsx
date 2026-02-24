@@ -6,7 +6,7 @@ import MiniLine from "../components/MiniLine.jsx";
 import { apiGet } from "../lib/api.js";
 import { fmtNumber, fmtPct, fmtPrice } from "../lib/format.js";
 
-export default function Market() {
+export default function Market({ token }) {
   const [symbols, setSymbols] = useState("BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT");
   const [rows, setRows] = useState([]);
   const [fx, setFx] = useState(null);
@@ -17,15 +17,15 @@ export default function Market() {
   const refresh = async () => {
     setErr("");
     const [t, f] = await Promise.all([
-      apiGet("/api/market/tickers?symbols=" + encodeURIComponent(symbols)),
-      apiGet("/api/market/usdtbrl")
+      apiGet("/api/market/tickers?symbols=" + encodeURIComponent(symbols), { token }),
+      apiGet("/api/market/usdtbrl", { token })
     ]);
     setRows(t.rows || []);
     setFx(f);
   };
 
   const refreshChart = async () => {
-    const r = await apiGet("/api/market/klines?symbol=" + encodeURIComponent(chartSymbol) + "&interval=15m&limit=96");
+    const r = await apiGet("/api/market/klines?symbol=" + encodeURIComponent(chartSymbol) + "&interval=15m&limit=96", { token });
     setKl(r.closes || []);
   };
 
@@ -106,4 +106,3 @@ export default function Market() {
     </div>
   );
 }
-

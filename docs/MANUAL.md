@@ -11,6 +11,17 @@ Links:
 
 ---
 
+## Modelo de implantação (recomendado) — Local-first (Fase 1)
+Decisão estratégica do produto:
+- O **bot + API + painel** rodam **na máquina do cliente** (localhost).
+- A API deve rodar em `127.0.0.1` e **não há exposição pública**.
+- **Zero custódia**: você não hospeda chaves dos usuários.
+- **Sem 2FA obrigatório agora** (o perímetro é a própria máquina do cliente).
+
+Estratégia futura (preparado por env vars / Docker):
+- Fase 2: VPS dedicada por cliente
+- Fase 3: (se fizer sentido) SaaS
+
 ## 1) Rodar localmente (Windows / PowerShell)
 
 Comando único:
@@ -34,6 +45,14 @@ Smoke test da API:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1
 ```
+
+### Rodar via Docker (opcional / preparado para VPS dedicada)
+Requer Docker Desktop:
+```powershell
+cd D:\DEV\Helpsystempro_Bot
+docker compose up --build
+```
+API: `http://localhost:8502/docs`
 
 ---
 
@@ -82,6 +101,20 @@ Itens principais:
 - Recomenda-se: travas extras + validações + limites conservadores.
 
 ---
+
+## 3.1) Kill switch + limites obrigatórios (segurança)
+O sistema inclui:
+- **Kill switch manual**: bloqueia novas compras (menu Bot → “Risco (limites + kill switch)”).
+- **Kill switch automático**: ativa quando limites de risco são atingidos.
+
+Limites (em `BinanceBot/Configs/settings.yml`):
+- `risk_max_daily_buy_quote_usdt` (limite diário de compras em USDT)
+- `risk_max_daily_loss_usdt` (perda diária máxima *realizada* em USDT)
+
+Em **LIVE** (`testnet: false`), esses limites são **obrigatórios**.
+
+Endpoint útil:
+- `GET /api/risk/daily` (estatísticas do dia + decisão “ok_to_buy”)
 
 ## 4) Aprovações de novas moedas (Discovery)
 

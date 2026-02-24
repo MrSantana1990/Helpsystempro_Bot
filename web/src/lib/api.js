@@ -1,5 +1,8 @@
-export async function apiGet(path) {
-  const res = await fetch(path, { cache: "no-store" });
+export async function apiGet(path, { token, query } = {}) {
+  const url = new URL(path, window.location.origin);
+  if (token) url.searchParams.set("token", token);
+  if (query) for (const [k, v] of Object.entries(query)) url.searchParams.set(k, String(v));
+  const res = await fetch(url.toString(), { cache: "no-store" });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg =

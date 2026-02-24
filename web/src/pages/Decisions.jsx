@@ -23,7 +23,7 @@ function actionTone(action) {
   return "neutral";
 }
 
-export default function Decisions() {
+export default function Decisions({ token }) {
   const [rows, setRows] = useState([]);
   const [sel, setSel] = useState("");
   const [onlyLatest, setOnlyLatest] = useState(true);
@@ -33,7 +33,7 @@ export default function Decisions() {
 
   const refresh = async () => {
     setErr("");
-    const r = await apiGet("/api/decisions?limit=500");
+    const r = await apiGet("/api/decisions?limit=500", { token });
     setRows(r.rows || []);
   };
 

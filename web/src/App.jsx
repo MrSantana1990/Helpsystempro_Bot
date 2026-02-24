@@ -22,7 +22,7 @@ export default function App() {
   const [botOn, setBotOn] = useState(false);
 
   const refreshBot = async () => {
-    const r = await apiGet("/api/bot/status");
+    const r = await apiGet("/api/bot/status", { token });
     setBotOn(!!r.running);
     return r;
   };
@@ -44,10 +44,10 @@ export default function App() {
   const pages = useMemo(
     () => ({
       overview: <Overview token={token} botOn={botOn} />,
-      market: <Market />,
-      trades: <Trades />,
-      decisions: <Decisions />,
-      news: <News />,
+      market: <Market token={token} />,
+      trades: <Trades token={token} />,
+      decisions: <Decisions token={token} />,
+      news: <News token={token} />,
       bot: <Bot token={token} setToken={setToken} />,
       config: <Config token={token} setToken={setToken} />
     }),

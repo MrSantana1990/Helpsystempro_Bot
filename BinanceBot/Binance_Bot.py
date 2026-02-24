@@ -20,6 +20,9 @@ from Modulos.storage import Storage, make_decision
 from Modulos.mock_data import generate_mock
 from Modulos.notifications import enviar_alerta
 from Modulos.symbol_registry import approved_symbols, propose_symbol
+from Modulos.env_flags import env_flag
+from Modulos.kill_switch import engage_kill_switch, read_kill_switch
+from Modulos.risk_limits import evaluate_risk_limits
 
 logger = configurar_logger()
 
@@ -103,9 +106,11 @@ def _make_binance_client(settings: dict, *, allow_public: bool) -> Client:
     testnet = bool(settings.get("testnet", True))
     if not testnet:
         # trava de segurança: evita operação real "sem querer"
-        import os
-
-        if os.getenv("HSP_LIVE_TRADING") not in {"1", "true", "TRUE", "yes", "YES"}:
+        if not (
+            env_flag("HSP_LIVE_TRADING", False)
+            or env_flag("LIVE_MODE", False)
+            or env_flag("HSP_LIVE_MODE", False)
+        ):
             raise ValueError(
                 "testnet=false, mas HSP_LIVE_TRADING não está habilitado. "
                 "Para operar em conta real, defina HSP_LIVE_TRADING=1."
@@ -254,8 +259,23 @@ async def run_cycle(client: Client, storage: Storage, *, dry_run: bool) -> None:
     max_per_cycle = int(settings.get("max_moedas_por_ciclo", 3))
     candidates = candidates[: max(1, max_per_cycle)]
 
+    # Kill switch manual/automático: impede novas compras.
+    ks = read_kill_switch()
+    if bool(ks.get("enabled", False)):
+        logger.warning("KILL SWITCH ativo. Nenhuma compra será executada neste ciclo. Motivo: %s", ks.get("reason"))
+        await _notify(f"KILL SWITCH ativo: {ks.get('reason') or 'ativo'}. Novas compras bloqueadas.", level="CRITICO")
+        return
+
     if not candidates or not can_trade:
         logger.info("Nenhuma oportunidade de compra neste ciclo.")
+        return
+
+    # Limites de risco (Local-first): antes de abrir novas posições.
+    risk = evaluate_risk_limits(storage)
+    if not risk.ok_to_buy:
+        engage_kill_switch(reason=risk.reason, source="auto")
+        await _notify(f"KILL SWITCH (auto): {risk.reason}", level="CRITICO")
+        logger.warning("Compras bloqueadas por risco: %s", risk.reason)
         return
 
     open_syms = storage.open_symbols()

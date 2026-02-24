@@ -23,6 +23,9 @@ const PROFILES = {
       max_moedas_por_ciclo: 2,
       max_open_positions: 2,
       minimo_usdt_por_ordem: 8,
+      maximo_exposicao_por_ordem: 0.2,
+      risk_max_daily_buy_quote_usdt: 30,
+      risk_max_daily_loss_usdt: 3,
       discovery_min_score: 0.65,
       discovery_max_new_per_day: 2
     }
@@ -37,6 +40,9 @@ const PROFILES = {
       max_moedas_por_ciclo: 3,
       max_open_positions: 3,
       minimo_usdt_por_ordem: 5,
+      maximo_exposicao_por_ordem: 0.25,
+      risk_max_daily_buy_quote_usdt: 50,
+      risk_max_daily_loss_usdt: 5,
       discovery_min_score: 0.55,
       discovery_max_new_per_day: 3
     }
@@ -51,6 +57,9 @@ const PROFILES = {
       max_moedas_por_ciclo: 4,
       max_open_positions: 5,
       minimo_usdt_por_ordem: 5,
+      maximo_exposicao_por_ordem: 0.3,
+      risk_max_daily_buy_quote_usdt: 80,
+      risk_max_daily_loss_usdt: 8,
       discovery_min_score: 0.5,
       discovery_max_new_per_day: 5
     }
@@ -78,8 +87,11 @@ export default function Config({ token, setToken }) {
     intervalo_execucao: 30,
     intervalo_pausa: 300,
     minimo_usdt_por_ordem: 5,
+    maximo_exposicao_por_ordem: 0.25,
     max_moedas_por_ciclo: 3,
     max_open_positions: 3,
+    risk_max_daily_buy_quote_usdt: 50,
+    risk_max_daily_loss_usdt: 5,
     buy_threshold: 0.45,
     avoid_threshold: -0.2,
     stop_loss_percentual: 2,
@@ -94,7 +106,7 @@ export default function Config({ token, setToken }) {
   });
 
   const refresh = async () => {
-    const r = await apiGet("/api/config/status");
+    const r = await apiGet("/api/config/status", { token });
     setSt(r);
     setSettings(JSON.stringify(r.settings || {}, null, 2));
   };
@@ -114,8 +126,17 @@ export default function Config({ token, setToken }) {
       intervalo_execucao: Number.isFinite(Number(s.intervalo_execucao)) ? Number(s.intervalo_execucao) : p.intervalo_execucao,
       intervalo_pausa: Number.isFinite(Number(s.intervalo_pausa)) ? Number(s.intervalo_pausa) : p.intervalo_pausa,
       minimo_usdt_por_ordem: Number.isFinite(Number(s.minimo_usdt_por_ordem)) ? Number(s.minimo_usdt_por_ordem) : p.minimo_usdt_por_ordem,
+      maximo_exposicao_por_ordem: Number.isFinite(Number(s.maximo_exposicao_por_ordem))
+        ? Number(s.maximo_exposicao_por_ordem)
+        : p.maximo_exposicao_por_ordem,
       max_moedas_por_ciclo: Number.isFinite(Number(s.max_moedas_por_ciclo)) ? Number(s.max_moedas_por_ciclo) : p.max_moedas_por_ciclo,
       max_open_positions: Number.isFinite(Number(s.max_open_positions)) ? Number(s.max_open_positions) : p.max_open_positions,
+      risk_max_daily_buy_quote_usdt: Number.isFinite(Number(s.risk_max_daily_buy_quote_usdt))
+        ? Number(s.risk_max_daily_buy_quote_usdt)
+        : p.risk_max_daily_buy_quote_usdt,
+      risk_max_daily_loss_usdt: Number.isFinite(Number(s.risk_max_daily_loss_usdt))
+        ? Number(s.risk_max_daily_loss_usdt)
+        : p.risk_max_daily_loss_usdt,
       buy_threshold: Number.isFinite(Number(s.buy_threshold)) ? Number(s.buy_threshold) : p.buy_threshold,
       avoid_threshold: Number.isFinite(Number(s.avoid_threshold)) ? Number(s.avoid_threshold) : p.avoid_threshold,
       stop_loss_percentual: Number.isFinite(Number(s.stop_loss_percentual)) ? Number(s.stop_loss_percentual) : p.stop_loss_percentual,
@@ -187,8 +208,11 @@ export default function Config({ token, setToken }) {
     obj.intervalo_execucao = Number(simple.intervalo_execucao);
     obj.intervalo_pausa = Number(simple.intervalo_pausa);
     obj.minimo_usdt_por_ordem = Number(simple.minimo_usdt_por_ordem);
+    obj.maximo_exposicao_por_ordem = Number(simple.maximo_exposicao_por_ordem);
     obj.max_moedas_por_ciclo = Number(simple.max_moedas_por_ciclo);
     obj.max_open_positions = Number(simple.max_open_positions);
+    obj.risk_max_daily_buy_quote_usdt = Number(simple.risk_max_daily_buy_quote_usdt);
+    obj.risk_max_daily_loss_usdt = Number(simple.risk_max_daily_loss_usdt);
     obj.buy_threshold = Number(simple.buy_threshold);
     obj.avoid_threshold = Number(simple.avoid_threshold);
     obj.stop_loss_percentual = Number(simple.stop_loss_percentual);
@@ -388,6 +412,57 @@ export default function Config({ token, setToken }) {
                 type="number"
                 min={1}
                 step="1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-xs text-white/60">Máx. posições abertas</div>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                value={simple.max_open_positions}
+                onChange={(e) => setSimple((p) => ({ ...p, max_open_positions: Number(e.target.value) }))}
+                type="number"
+                min={1}
+                step="1"
+              />
+            </div>
+            <div>
+              <div className="text-xs text-white/60">Exposição máx./ordem (0–1)</div>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                value={simple.maximo_exposicao_por_ordem}
+                onChange={(e) => setSimple((p) => ({ ...p, maximo_exposicao_por_ordem: Number(e.target.value) }))}
+                type="number"
+                min={0}
+                max={1}
+                step="0.01"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-xs text-white/60">Limite diário compras (USDT)</div>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                value={simple.risk_max_daily_buy_quote_usdt}
+                onChange={(e) => setSimple((p) => ({ ...p, risk_max_daily_buy_quote_usdt: Number(e.target.value) }))}
+                type="number"
+                min={0}
+                step="1"
+              />
+            </div>
+            <div>
+              <div className="text-xs text-white/60">Limite perda diária (USDT)</div>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                value={simple.risk_max_daily_loss_usdt}
+                onChange={(e) => setSimple((p) => ({ ...p, risk_max_daily_loss_usdt: Number(e.target.value) }))}
+                type="number"
+                min={0}
+                step="0.5"
               />
             </div>
           </div>
