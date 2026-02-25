@@ -125,3 +125,10 @@ Venda como:
 - Relatórios automáticos (PDF/CSV) e “relatório semanal”
 - Perfis mais inteligentes (auto-tuning com limites)
 - Deploy oficial no blueprint HelpSystem Pro (Node/TS + Drive JSON + Netlify)
+
+---
+
+## Anexos (materiais de venda)
+- Comparativo de produtos: `docs/COMPARATIVO_PRODUTOS.md`
+- Template de proposta comercial: `docs/PROPOSTA_COMERCIAL_TEMPLATE.md`
+- Termo de responsabilidade (aceite no LIVE): `docs/TERMO_RESPONSABILIDADE.md`
