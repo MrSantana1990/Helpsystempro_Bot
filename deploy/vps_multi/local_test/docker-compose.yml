@@ -1,0 +1,54 @@
+services:
+  traefik:
+    image: traefik:v2.11
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:8088
+    ports:
+      - "8088:8088"
+      - "8089:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - hsp
+
+  t1:
+    image: helpsystempro-bot:latest
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      HSP_PORTAL_TOKEN: "t1-token"
+      HSP_LOCAL_ONLY: "0"
+      ENABLE_AUTH: "1"
+    networks:
+      - hsp
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.t1.rule=Host(`t1.local`)
+      - traefik.http.routers.t1.entrypoints=web
+      - traefik.http.services.t1.loadbalancer.server.port=8502
+
+  t2:
+    image: helpsystempro-bot:latest
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      HSP_PORTAL_TOKEN: "t2-token"
+      HSP_LOCAL_ONLY: "0"
+      ENABLE_AUTH: "1"
+    networks:
+      - hsp
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.t2.rule=Host(`t2.local`)
+      - traefik.http.routers.t2.entrypoints=web
+      - traefik.http.services.t2.loadbalancer.server.port=8502
+
+networks:
+  hsp:
+    name: hsp_local

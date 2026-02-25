@@ -51,6 +51,18 @@ Rodar **24/7** com painel web, sem depender do PC do cliente, mantendo isolament
 
 ---
 
+## Variante (Fase 2b) — 1 VPS maior com múltiplos clientes (multi-tenant “light”)
+
+Quando fizer sentido reduzir custo:
+- 1 VPS maior
+- 1 container por cliente
+- reverse proxy (Traefik) roteando por subdomínio
+- volumes separados por cliente
+
+Entrega: `deploy/vps_multi/`
+
+---
+
 ## Fase 3 — SaaS multi-tenant (só se validar mercado)
 
 ### O que muda
@@ -74,4 +86,3 @@ Só faça quando tiver:
 - playbook de onboarding estável
 - suporte e monitoramento funcionando
 - política de segurança definida e aplicada
-

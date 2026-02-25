@@ -1,0 +1,39 @@
+services:
+  app:
+    image: helpsystempro-bot:latest
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      HSP_PORTAL_TOKEN: "${HSP_PORTAL_TOKEN}"
+      HSP_LOCAL_ONLY: "${HSP_LOCAL_ONLY:-0}"
+      ENABLE_AUTH: "${ENABLE_AUTH:-1}"
+      ENABLE_2FA: "${ENABLE_2FA:-0}"
+      HSP_LIVE_TRADING: "${HSP_LIVE_TRADING:-0}"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./Configs:/app/BinanceBot/Configs
+    networks:
+      - hsp
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${TENANT_SLUG}.rule=Host(`${TENANT_DOMAIN}`)
+      - traefik.http.routers.${TENANT_SLUG}.entrypoints=websecure
+      - traefik.http.routers.${TENANT_SLUG}.tls.certresolver=le
+      - traefik.http.services.${TENANT_SLUG}.loadbalancer.server.port=8502
+
+      # Basic auth para o portal inteiro
+      - traefik.http.middlewares.${TENANT_SLUG}-auth.basicauth.users=${TENANT_BASIC_AUTH}
+      - traefik.http.routers.${TENANT_SLUG}.middlewares=${TENANT_SLUG}-auth
+
+      # HTTP -> HTTPS
+      - traefik.http.routers.${TENANT_SLUG}-http.rule=Host(`${TENANT_DOMAIN}`)
+      - traefik.http.routers.${TENANT_SLUG}-http.entrypoints=web
+      - traefik.http.routers.${TENANT_SLUG}-http.middlewares=${TENANT_SLUG}-redirect
+      - traefik.http.middlewares.${TENANT_SLUG}-redirect.redirectscheme.scheme=https
+
+networks:
+  hsp:
+    external: true

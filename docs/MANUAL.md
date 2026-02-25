@@ -54,6 +54,13 @@ docker compose up --build
 ```
 API: `http://localhost:8502/docs`
 
+### Deploy 24/7 (VPS)
+Para rodar 24/7 em cloud:
+- VPS dedicada (1 cliente): `deploy/vps/`
+- VPS multi (1 VPS, vários clientes isolados): `deploy/vps_multi/` (Traefik + 1 container por cliente)
+
+Roadmap: `docs/ROADMAP_CLOUD_247.md`
+
 ---
 
 ## 2) Configuração (passo a passo)
