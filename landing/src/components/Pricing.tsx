@@ -18,6 +18,8 @@ function PlanCard({
   highlight,
   ctaHref,
   ctaLabel,
+  demoHref,
+  demoLabel,
   footer
 }: {
   title: string;
@@ -27,6 +29,8 @@ function PlanCard({
   highlight?: boolean;
   ctaHref: string;
   ctaLabel: string;
+  demoHref: string;
+  demoLabel: string;
   footer: string;
 }) {
   return (
@@ -63,19 +67,27 @@ function PlanCard({
         ))}
       </ul>
 
-      <a
-        href={ctaHref}
-        target="_blank"
-        rel="noreferrer"
-        className={[
-          "focus-ring mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold shadow-soft",
-          highlight
-            ? "bg-accent text-bg hover:brightness-110"
-            : "border border-border/10 bg-bg/20 text-text hover:bg-bg/30"
-        ].join(" ")}
-      >
-        {ctaLabel}
-      </a>
+      <div className="mt-6 grid gap-2 sm:grid-cols-2">
+        <a
+          href={ctaHref}
+          target="_blank"
+          rel="noreferrer"
+          className={[
+            "focus-ring inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold shadow-soft",
+            highlight
+              ? "bg-accent text-bg hover:brightness-110"
+              : "border border-border/10 bg-bg/20 text-text hover:bg-bg/30"
+          ].join(" ")}
+        >
+          {ctaLabel}
+        </a>
+        <a
+          href={demoHref}
+          className="focus-ring inline-flex w-full items-center justify-center rounded-xl border border-border/10 bg-card/40 px-4 py-3 text-sm font-semibold text-text shadow-soft backdrop-blur hover:bg-card/60"
+        >
+          {demoLabel}
+        </a>
+      </div>
 
       <div className="mt-4 text-xs text-muted">{footer}</div>
     </div>
@@ -89,6 +101,7 @@ export default function Pricing({
   whatsappPhone,
   whatsappBaseMessage
 }: Props) {
+  const demoHref = "#produto";
   const waStarter = buildWhatsAppUrl({
     phone: whatsappPhone,
     baseMessage: whatsappBaseMessage,
@@ -110,8 +123,8 @@ export default function Pricing({
       <SectionHeader
         id="planos"
         eyebrow="Planos e preços"
-        title="Pacotes simples, com setup e suporte."
-        subtitle="Sem promessas de performance. Você mede resultados com métricas (PnL, drawdown, win rate) e valida em dry-run/testnet."
+        title="Planos com governança, risco e auditoria — sem hype."
+        subtitle="Sem promessas de performance. O foco é disciplina operacional: travas de risco, auditoria exportável e validação em dry-run/testnet."
       />
       <Container>
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
@@ -120,13 +133,17 @@ export default function Pricing({
             price={priceStarter}
             subtitle="R$ 297/mês + Setup R$ 497"
             features={[
-              "Portal + auditoria + logs",
-              "Dry-run/testnet (recomendado)",
+              "Portal estilo exchange (status, logs, pendências)",
+              "Auditoria exportável (CSV)",
+              "Risco: kill switch + limites obrigatórios",
               "Discovery com pendências (aprovação)",
+              "Dry-run/testnet (recomendado no piloto)",
               "Onboarding e configuração inicial"
             ]}
             ctaHref={waStarter}
-            ctaLabel="Quero o Starter"
+            ctaLabel="Contratar"
+            demoHref={demoHref}
+            demoLabel="Ver demo"
             footer="Observação legal: preços podem variar conforme escopo / implantação / suporte."
           />
           <PlanCard
@@ -141,7 +158,9 @@ export default function Pricing({
             ]}
             highlight
             ctaHref={waPro}
-            ctaLabel="Quero o Pro"
+            ctaLabel="Contratar"
+            demoHref={demoHref}
+            demoLabel="Ver demo"
             footer="Observação legal: preços podem variar conforme escopo / implantação / suporte."
           />
           <PlanCard
@@ -150,12 +169,14 @@ export default function Pricing({
             subtitle="Pro + tuning e acompanhamento"
             features={[
               "Tudo do Pro",
-              "Tuning de perfis e limites",
+              "Tuning de perfis e limites (governança)",
               "Acompanhamento de métricas",
               "Revisão de risco e governança"
             ]}
             ctaHref={waPremium}
-            ctaLabel="Quero o Premium"
+            ctaLabel="Contratar"
+            demoHref={demoHref}
+            demoLabel="Ver demo"
             footer="Observação legal: preços podem variar conforme escopo / implantação / suporte."
           />
         </div>
@@ -169,4 +190,3 @@ export default function Pricing({
     </section>
   );
 }
-

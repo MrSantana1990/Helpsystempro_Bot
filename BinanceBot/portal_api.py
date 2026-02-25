@@ -34,6 +34,8 @@ from BinanceBot.Modulos.license import get_license_status, save_license_obj
 REPO_DIR = Path(__file__).resolve().parents[1]
 PORTAL_DIR = REPO_DIR / "portal"
 DATA_DIR = REPO_DIR / "data"
+COMPLIANCE_PATH = DATA_DIR / "compliance_accept.json"
+COMPLIANCE_DOC_PATH = REPO_DIR / "docs" / "TERMO_RESPONSABILIDADE.md"
 
 
 app = FastAPI(title="HelpSystem Portal API", version="1.0")
@@ -380,6 +382,60 @@ def license_save(payload: dict[str, Any], request: Request, token: str | None = 
     return {"ok": True, "path": str(p), "status": get_license_status()}
 
 
+def _read_compliance_accept() -> dict[str, Any] | None:
+    try:
+        if not COMPLIANCE_PATH.exists():
+            return None
+        obj = json.loads(COMPLIANCE_PATH.read_text(encoding="utf-8", errors="replace"))
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        return None
+
+
+def _write_compliance_accept(obj: dict[str, Any]) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    COMPLIANCE_PATH.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@app.get("/api/compliance/term")
+def compliance_term() -> dict[str, Any]:
+    try:
+        if COMPLIANCE_DOC_PATH.exists():
+            return {"ok": True, "version": "1.0", "path": str(COMPLIANCE_DOC_PATH), "text": COMPLIANCE_DOC_PATH.read_text(encoding="utf-8", errors="replace")}
+    except Exception:
+        pass
+    return {"ok": True, "version": "1.0", "path": None, "text": "Termo indisponível. Consulte docs/TERMO_RESPONSABILIDADE.md"}
+
+
+@app.get("/api/compliance/status")
+def compliance_status() -> dict[str, Any]:
+    obj = _read_compliance_accept()
+    return {
+        "accepted": bool(obj),
+        "path": str(COMPLIANCE_PATH),
+        "record": obj,
+    }
+
+
+@app.post("/api/compliance/accept")
+def compliance_accept(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
+    _require_token(token)
+    version = str(payload.get("version") or "1.0").strip() or "1.0"
+    rec = {
+        "accepted_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "version": version,
+        "client_host": (request.client.host if request.client else None),
+    }
+    _write_compliance_accept(rec)
+    append_audit_event(
+        event="compliance.accept",
+        token=token,
+        client_host=(request.client.host if request.client else None),
+        detail={"version": version},
+    )
+    return {"ok": True, "accepted": True, "path": str(COMPLIANCE_PATH), "record": rec}
+
+
 @app.post("/api/mock")
 def mock(seed: int = 42) -> dict[str, Any]:
     storage = Storage()
@@ -485,6 +541,12 @@ def bot_start(
             )
         # Licença: bloqueia LIVE se inválida/expirada (dry-run/testnet não exigem).
         if not bool(dry_run):
+            comp = _read_compliance_accept()
+            if not comp:
+                raise HTTPException(
+                    status_code=428,
+                    detail="Antes do LIVE, aceite o Termo de Responsabilidade no painel (Saúde → Licença/Termo).",
+                )
             lic = get_license_status()
             if not bool(lic.get("valid", False)):
                 raise HTTPException(

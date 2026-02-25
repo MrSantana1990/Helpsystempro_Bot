@@ -18,11 +18,21 @@ export default function Health({ token }) {
   const [err, setErr] = useState("");
   const [licenseText, setLicenseText] = useState("");
   const [licenseMsg, setLicenseMsg] = useState("");
+  const [term, setTerm] = useState(null);
+  const [termErr, setTermErr] = useState("");
 
   const refresh = async () => {
     setErr("");
     const r = await apiGet("/api/ops/health", { token });
     setData(r);
+    try {
+      const t = await apiGet("/api/compliance/term", { token });
+      setTerm(t);
+      setTermErr("");
+    } catch (e) {
+      setTerm(null);
+      setTermErr(e.message);
+    }
   };
 
   useEffect(() => {
@@ -121,6 +131,19 @@ export default function Health({ token }) {
             {licenseMsg ? <div className="text-sm text-white/70">{licenseMsg}</div> : null}
           </div>
         </div>
+      </Card>
+
+      <Card title="Termo (LIVE)">
+        <div className="text-sm text-white/70">
+          Antes de operar em LIVE, o cliente precisa aceitar o termo. Esse aceite fica registrado localmente para auditoria.
+        </div>
+        {termErr ? <div className="mt-2 text-sm text-red-200/80">Erro ao carregar termo: {termErr}</div> : null}
+        <textarea
+          className="mt-3 h-[220px] w-full rounded-xl border border-white/10 bg-black/20 p-3 font-mono text-xs outline-none focus:border-white/25"
+          readOnly
+          value={String(term?.text || "").trim()}
+        />
+        <div className="mt-2 text-xs text-white/60">Arquivo: {term?.path || "docs/TERMO_RESPONSABILIDADE.md"}</div>
       </Card>
 
       <Card title="Exportação (auditoria)">

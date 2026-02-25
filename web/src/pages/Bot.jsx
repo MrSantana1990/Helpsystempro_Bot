@@ -11,24 +11,30 @@ export default function Bot({ token, setToken }) {
   const [risk, setRisk] = useState(null);
   const [cfg, setCfg] = useState(null);
   const [lic, setLic] = useState(null);
+  const [comp, setComp] = useState(null);
+  const [term, setTerm] = useState(null);
+  const [showTerm, setShowTerm] = useState(false);
+  const [termOk, setTermOk] = useState(false);
   const [ksReason, setKsReason] = useState("");
   const [msg, setMsg] = useState("");
   const [dryRun, setDryRun] = useState(true);
   const [approveMode, setApproveMode] = useState("24h"); // 24h | 7d | forever
 
   const refresh = async () => {
-    const [r, rr, rk, rc, rl] = await Promise.all([
+    const [r, rr, rk, rc, rl, rcomp] = await Promise.all([
       apiGet("/api/bot/status", { token }),
       apiGet("/api/symbols/registry", { token }).catch(() => null),
       apiGet("/api/risk/daily", { token }).catch(() => null),
       apiGet("/api/config/status", { token }).catch(() => null),
-      apiGet("/api/license/status", { token }).catch(() => null)
+      apiGet("/api/license/status", { token }).catch(() => null),
+      apiGet("/api/compliance/status", { token }).catch(() => null)
     ]);
     setStatus(r);
     setReg(rr);
     setRisk(rk);
     setCfg(rc);
     setLic(rl);
+    setComp(rcomp);
     return r;
   };
 
@@ -61,6 +67,18 @@ export default function Bot({ token, setToken }) {
       }
       if (!lic?.valid) {
         setMsg("LIVE bloqueado: licença inválida/expirada. Veja Saúde → Licença.");
+        return;
+      }
+      if (!comp?.accepted) {
+        try {
+          const t = await apiGet("/api/compliance/term", { token });
+          setTerm(t);
+        } catch {
+          setTerm({ text: "Termo indisponível. Consulte docs/TERMO_RESPONSABILIDADE.md", version: "1.0" });
+        }
+        setTermOk(false);
+        setShowTerm(true);
+        setMsg("Antes do LIVE, aceite o termo de responsabilidade.");
         return;
       }
       const t = window.prompt('CONFIRMAÇÃO EXTRA (LIVE): digite "LIVE" para continuar.');
@@ -109,6 +127,45 @@ export default function Bot({ token, setToken }) {
 
   return (
     <div className="flex flex-col gap-3">
+      {showTerm ? (
+        <div className="rounded-xl2 border border-accent/25 bg-accent/10 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-lg font-extrabold">Termo de responsabilidade (obrigatório para LIVE)</div>
+            <Button variant="secondary" onClick={() => setShowTerm(false)}>
+              Fechar
+            </Button>
+          </div>
+          <div className="mt-2 text-sm text-white/70">
+            Leia com atenção. Para operar em conta real (LIVE), você precisa aceitar este termo.
+          </div>
+          <textarea
+            className="mt-3 h-[260px] w-full rounded-xl border border-white/10 bg-black/20 p-3 font-mono text-xs outline-none focus:border-white/25"
+            readOnly
+            value={String(term?.text || "").trim()}
+          />
+          <label className="mt-3 flex items-center gap-2 text-sm text-white/80">
+            <input type="checkbox" checked={termOk} onChange={(e) => setTermOk(e.target.checked)} />
+            Li e aceito o termo acima.
+          </label>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() =>
+                (async () => {
+                  if (!termOk) throw new Error("Marque a caixa de aceite para continuar.");
+                  await apiPost("/api/compliance/accept", { token, body: { version: term?.version || "1.0" } });
+                  setShowTerm(false);
+                  setMsg("Termo aceito. Agora clique em Play novamente para LIVE.");
+                  await refresh();
+                })().catch((e) => setMsg("Erro: " + e.message))
+              }
+            >
+              Aceitar termo
+            </Button>
+            <div className="text-xs text-white/60">Isso não é recomendação financeira e não há garantia de lucro.</div>
+          </div>
+        </div>
+      ) : null}
+
       <Card title="Bot (Play/Stop)">
         <div className="rounded-xl border border-accent/25 bg-accent/10 p-3 text-sm">
           Segurança: use <b>dry-run</b> para simular/analisar. Operação real envolve risco e não há garantia de ganhos.
@@ -143,6 +200,7 @@ export default function Bot({ token, setToken }) {
           <Badge tone={killOn ? "bad" : "neutral"}>kill: {killOn ? "ON" : "OFF"}</Badge>
           <Badge tone={cfg?.settings?.testnet === false ? "warn" : "neutral"}>testnet: {cfg?.settings?.testnet === false ? "false" : "true"}</Badge>
           <Badge tone={lic?.valid ? "good" : "warn"}>licença: {lic?.valid ? "ATIVA" : (lic?.status || "-")}</Badge>
+          <Badge tone={comp?.accepted ? "good" : "warn"}>termo: {comp?.accepted ? "ACEITO" : "pendente"}</Badge>
         </div>
         {msg ? <div className="mt-3 text-sm text-white/70">{msg}</div> : null}
       </Card>
