@@ -208,14 +208,15 @@ def _cache_set(key: str, data: Any) -> None:
     _cache[key] = (time.time(), data)
 
 
-def _require_token(token: str | None) -> None:
+def _require_token(request: Request | None, token: str | None = None) -> None:
     expected = os.getenv("HSP_PORTAL_TOKEN")
     if not expected:
         raise HTTPException(
             status_code=403,
             detail="Escrita de config desativada. Defina HSP_PORTAL_TOKEN e reinicie o servidor.",
         )
-    if token != expected:
+    tok = token or (_request_token(request) if request is not None else None)
+    if tok != expected:
         raise HTTPException(status_code=403, detail="Token inválido.")
 
 
@@ -369,7 +370,7 @@ def license_status() -> dict[str, Any]:
 
 @app.post("/api/license/save")
 def license_save(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Payload inválido.")
     p = save_license_obj(payload)
@@ -419,7 +420,7 @@ def compliance_status() -> dict[str, Any]:
 
 @app.post("/api/compliance/accept")
 def compliance_accept(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     version = str(payload.get("version") or "1.0").strip() or "1.0"
     rec = {
         "accepted_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
@@ -511,7 +512,7 @@ def bot_start(
     once: bool = False,
 ) -> dict[str, Any]:
     # segurança: exige token para start/stop
-    _require_token(token)
+    _require_token(request, token)
     if bool(read_kill_switch().get("enabled", False)):
         raise HTTPException(status_code=409, detail="KILL SWITCH ativo. Desative no painel para iniciar o bot.")
     # preflight: evita "parece que iniciou" mas o bot cai por config faltante
@@ -574,7 +575,7 @@ def bot_start(
 
 @app.post("/api/bot/stop")
 def bot_stop(request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     append_audit_event(
         event="bot.stop",
         token=token,
@@ -591,7 +592,7 @@ def bot_kill_switch() -> dict[str, Any]:
 
 @app.post("/api/bot/kill_switch")
 def bot_kill_switch_set(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     enabled = bool(payload.get("enabled", True))
     reason = str(payload.get("reason") or "").strip() or "manual"
     if enabled:
@@ -657,8 +658,8 @@ def pnl_realized(
 
 
 @app.get("/api/export/audit.csv")
-def export_audit_csv(token: str | None = None) -> StreamingResponse:
-    _require_token(token)
+def export_audit_csv(request: Request, token: str | None = None) -> StreamingResponse:
+    _require_token(request, token)
     p = Path(audit_path())
     if not p.exists():
         raise HTTPException(status_code=404, detail="audit.jsonl não encontrado.")
@@ -699,8 +700,8 @@ def export_audit_csv(token: str | None = None) -> StreamingResponse:
 
 
 @app.get("/api/export/trades.csv")
-def export_trades_csv(token: str | None = None, limit: int = Query(200000, ge=100, le=500000)) -> StreamingResponse:
-    _require_token(token)
+def export_trades_csv(request: Request, token: str | None = None, limit: int = Query(200000, ge=100, le=500000)) -> StreamingResponse:
+    _require_token(request, token)
     storage = Storage()
 
     def gen():  # type: ignore[no-untyped-def]
@@ -893,7 +894,7 @@ def portfolio() -> dict[str, Any]:
 
 @app.post("/api/portfolio/save")
 def portfolio_save(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Payload inválido.")
     rows = payload.get("rows")
@@ -1159,7 +1160,7 @@ def symbols_registry() -> dict[str, Any]:
 
 @app.post("/api/symbols/decide")
 def symbols_decide(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Payload inválido.")
     symbol = str(payload.get("symbol") or "").strip().upper()
@@ -1180,7 +1181,7 @@ def symbols_decide(payload: dict[str, Any], request: Request, token: str | None 
 
 @app.post("/api/config/save_settings")
 def save_settings(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     path = config_dir() / "settings.yml"
     # valida básico
     if not isinstance(payload, dict):
@@ -1206,7 +1207,7 @@ def save_settings(payload: dict[str, Any], request: Request, token: str | None =
 
 @app.post("/api/config/save_env")
 def save_env(payload: dict[str, Any], request: Request, token: str | None = None) -> dict[str, Any]:
-    _require_token(token)
+    _require_token(request, token)
     path = config_dir() / "key.env"
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Payload inválido.")

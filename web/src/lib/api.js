@@ -1,8 +1,9 @@
 export async function apiGet(path, { token, query } = {}) {
   const url = new URL(path, window.location.origin);
-  if (token) url.searchParams.set("token", token);
   if (query) for (const [k, v] of Object.entries(query)) url.searchParams.set(k, String(v));
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(url.toString(), { cache: "no-store", headers });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg =
@@ -16,11 +17,10 @@ export async function apiGet(path, { token, query } = {}) {
 
 export async function apiPost(path, { token, query, body } = {}) {
   const url = new URL(path, window.location.origin);
-  if (token) url.searchParams.set("token", token);
   if (query) for (const [k, v] of Object.entries(query)) url.searchParams.set(k, String(v));
   const res = await fetch(url.toString(), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify(body || {})
   });
   const json = await res.json().catch(() => ({}));

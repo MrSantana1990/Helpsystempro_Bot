@@ -1,0 +1,44 @@
+services:
+  app:
+    image: helpsystempro-bot:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    environment:
+      HSP_PORTAL_TOKEN: "${HSP_PORTAL_TOKEN}"
+      HSP_LOCAL_ONLY: "${HSP_LOCAL_ONLY:-0}"
+      ENABLE_AUTH: "${ENABLE_AUTH:-1}"
+      ENABLE_2FA: "${ENABLE_2FA:-0}"
+      HSP_LIVE_TRADING: "${HSP_LIVE_TRADING:-0}"
+    volumes:
+      - ../../data:/app/data
+      - ../../logs:/app/logs
+      - ../../BinanceBot/Configs:/app/BinanceBot/Configs
+    networks:
+      - hsp
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: "${DOMAIN}"
+      PANEL_USER: "${PANEL_USER}"
+      PANEL_PASSWORD_HASH: "${PANEL_PASSWORD_HASH}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - hsp
+
+networks:
+  hsp:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+

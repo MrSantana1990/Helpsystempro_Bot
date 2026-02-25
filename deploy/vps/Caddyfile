@@ -1,0 +1,16 @@
+{
+  email you@example.com
+}
+
+https://{$DOMAIN} {
+  encode gzip
+
+  # Protege o portal e a API com basic auth (primeira camada).
+  basicauth /* {
+    {$PANEL_USER} {$PANEL_PASSWORD_HASH}
+  }
+
+  # Reverse proxy para o container do app
+  reverse_proxy app:8502
+}
+

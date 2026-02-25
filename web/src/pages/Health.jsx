@@ -43,8 +43,25 @@ export default function Health({ token }) {
   const bot = data?.bot || null;
   const runtime = data?.runtime || null;
 
-  const auditHref = `/api/export/audit.csv?token=${encodeURIComponent(token || "")}`;
-  const tradesHref = `/api/export/trades.csv?token=${encodeURIComponent(token || "")}`;
+  const download = async (path, filename) => {
+    const url = new URL(path, window.location.origin);
+    const res = await fetch(url.toString(), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json?.detail || res.statusText);
+    }
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(href);
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -148,22 +165,18 @@ export default function Health({ token }) {
 
       <Card title="Exportação (auditoria)">
         <div className="flex flex-wrap gap-2">
-          <a
-            className="inline-flex items-center rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm font-semibold hover:border-white/25"
-            href={auditHref}
-            target="_blank"
-            rel="noreferrer"
+          <Button
+            variant="secondary"
+            onClick={() => download("/api/export/audit.csv", "audit.csv").catch((e) => setErr(e.message))}
           >
             Baixar audit.csv
-          </a>
-          <a
-            className="inline-flex items-center rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm font-semibold hover:border-white/25"
-            href={tradesHref}
-            target="_blank"
-            rel="noreferrer"
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => download("/api/export/trades.csv", "trades.csv").catch((e) => setErr(e.message))}
           >
             Baixar trades.csv
-          </a>
+          </Button>
         </div>
         <div className="mt-2 text-xs text-white/60">
           Dica: envie os CSVs ao cliente para auditoria. Não inclua segredos (API_SECRET nunca é exportado).
