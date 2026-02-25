@@ -45,6 +45,11 @@ bash deploy/vps_multi/bin/add-tenant.sh cliente1 cliente1.seudominio.com
 bash deploy/vps_multi/bin/up-tenant.sh cliente1
 ```
 
+### Subir tudo de uma vez (proxy + todos os tenants)
+```bash
+bash deploy/vps_multi/bin/up-all.sh
+```
+
 ### Gerar basic auth (recomendado)
 Na VPS (Ubuntu), instale `htpasswd`:
 ```bash
