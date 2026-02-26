@@ -24,7 +24,7 @@ Dados fictícios (para ver o painel preenchido):
 
 Smoke test:
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -Token local-dev
 ```
 
 ## Documentação
