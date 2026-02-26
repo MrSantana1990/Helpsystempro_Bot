@@ -5,6 +5,15 @@ import Badge from "../components/Badge.jsx";
 import { apiGet, apiPost } from "../lib/api.js";
 import { fmtNumber } from "../lib/format.js";
 
+function licenseStatusPt(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "active") return "ativa";
+  if (s === "expired") return "expirada";
+  if (s === "invalid") return "inválida";
+  if (s === "missing") return "ausente";
+  return status || "-";
+}
+
 export default function Bot({ token, setToken }) {
   const [status, setStatus] = useState(null);
   const [reg, setReg] = useState(null);
@@ -197,9 +206,9 @@ export default function Bot({ token, setToken }) {
           <Badge tone={botOn ? "good" : "neutral"}>status: {botOn ? "rodando" : "parado"}</Badge>
           <Badge>pid: {status?.pid ?? "-"}</Badge>
           <Badge className="font-mono">args: {status?.state?.args ? String(status.state.args) : "-"}</Badge>
-          <Badge tone={killOn ? "bad" : "neutral"}>kill: {killOn ? "ON" : "OFF"}</Badge>
-          <Badge tone={cfg?.settings?.testnet === false ? "warn" : "neutral"}>testnet: {cfg?.settings?.testnet === false ? "false" : "true"}</Badge>
-          <Badge tone={lic?.valid ? "good" : "warn"}>licença: {lic?.valid ? "ATIVA" : (lic?.status || "-")}</Badge>
+          <Badge tone={killOn ? "bad" : "neutral"}>trava: {killOn ? "ATIVA" : "INATIVA"}</Badge>
+          <Badge tone={cfg?.settings?.testnet === false ? "warn" : "neutral"}>ambiente: {cfg?.settings?.testnet === false ? "REAL" : "TESTNET"}</Badge>
+          <Badge tone={lic?.valid ? "good" : "warn"}>licença: {lic?.valid ? "ATIVA" : licenseStatusPt(lic?.status)}</Badge>
           <Badge tone={comp?.accepted ? "good" : "warn"}>termo: {comp?.accepted ? "ACEITO" : "pendente"}</Badge>
         </div>
         {msg ? <div className="mt-3 text-sm text-white/70">{msg}</div> : null}

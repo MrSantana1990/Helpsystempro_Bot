@@ -134,12 +134,12 @@ export default function Overview({ token, botOn }) {
         title="Painel de Controle"
         right={
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={ov?.testnet ? "good" : "warn"}>testnet: {String(!!ov?.testnet)}</Badge>
-            <Badge>trades: {ov?.counts?.trades ?? "-"}</Badge>
+            <Badge tone={ov?.testnet ? "good" : "warn"}>ambiente: {ov?.testnet ? "TESTNET" : "REAL"}</Badge>
+            <Badge>ordens: {ov?.counts?.trades ?? "-"}</Badge>
             <Badge>decisões: {ov?.counts?.decisions ?? "-"}</Badge>
             <Badge>abertas: {ov?.counts?.open_positions ?? "-"}</Badge>
             <Badge tone={(reg?.pending || []).length ? "warn" : "neutral"}>pendentes: {(reg?.pending || []).length ?? "-"}</Badge>
-            <Badge tone={botOn ? "good" : "neutral"}>bot: {botOn ? "ON" : "OFF"}</Badge>
+            <Badge tone={botOn ? "good" : "neutral"}>bot: {botOn ? "LIGADO" : "DESLIGADO"}</Badge>
           </div>
         }
       >

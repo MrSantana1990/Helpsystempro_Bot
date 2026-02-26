@@ -3,12 +3,69 @@ import Card from "../components/Card.jsx";
 import Button from "../components/Button.jsx";
 import Badge from "../components/Badge.jsx";
 import { apiGet, apiPost } from "../lib/api.js";
+import { fmtNumber } from "../lib/format.js";
+
+function labelForKey(k) {
+  const map = {
+    status: "Status",
+    valid: "Válida",
+    plan: "Plano",
+    expires_at_utc: "Expira em (UTC)",
+    reason: "Motivo",
+    machine_hash_local: "Machine hash (local)",
+    path: "Caminho",
+
+    last_cycle_start_utc: "Início do último ciclo (UTC)",
+    last_cycle_end_utc: "Fim do último ciclo (UTC)",
+    last_cycle_duration_s: "Duração do último ciclo (s)",
+    last_error_at_utc: "Último erro (UTC)",
+    last_error: "Mensagem do erro",
+
+    day_utc: "Dia (UTC)",
+    buy_quote_usdt: "Compras hoje (USDT)",
+    sell_quote_usdt: "Vendas hoje (USDT)",
+    realized_pnl_usdt: "PnL realizado hoje (USDT)",
+    fees_usdt: "Taxas hoje (USDT)",
+    orders_count: "Ordens hoje (qtd)",
+    executions_count: "Execuções hoje (qtd)",
+    drawdown_usdt_est: "Drawdown estimado (USDT)"
+  };
+  return map[k] || k;
+}
+
+function licenseStatusPt(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "active") return "ativa";
+  if (s === "expired") return "expirada";
+  if (s === "invalid") return "inválida";
+  if (s === "missing") return "ausente";
+  return status || "-";
+}
+
+function fmtValue(k, v) {
+  if (v === null || v === undefined || v === "") return "-";
+  if (typeof v === "boolean") return v ? "sim" : "não";
+
+  const numericKeys = new Set([
+    "buy_quote_usdt",
+    "sell_quote_usdt",
+    "realized_pnl_usdt",
+    "fees_usdt",
+    "drawdown_usdt_est",
+    "last_cycle_duration_s"
+  ]);
+  const intKeys = new Set(["orders_count", "executions_count"]);
+  const n = Number(v);
+  if (numericKeys.has(k) && Number.isFinite(n)) return fmtNumber(n, 4);
+  if (intKeys.has(k) && Number.isFinite(n)) return fmtNumber(n, 0);
+  return String(v);
+}
 
 function Row({ k, v }) {
   return (
     <div className="grid grid-cols-[160px_1fr] gap-3 border-b border-white/5 py-2 text-sm">
-      <div className="text-white/60">{k}</div>
-      <div className="min-w-0 break-words font-mono text-xs text-white/80">{String(v ?? "-")}</div>
+      <div className="text-white/60">{labelForKey(k)}</div>
+      <div className="min-w-0 break-words font-mono text-xs text-white/80">{fmtValue(k, v)}</div>
     </div>
   );
 }
@@ -76,17 +133,17 @@ export default function Health({ token }) {
         }
       >
         <div className="flex flex-wrap gap-2">
-          <Badge>uptime: {data?.api?.uptime_s ?? "-"}s</Badge>
-          <Badge tone={bot?.running ? "good" : "neutral"}>bot: {bot?.running ? "ON" : "OFF"}</Badge>
-          <Badge tone={bot?.kill_switch?.enabled ? "bad" : "neutral"}>kill: {bot?.kill_switch?.enabled ? "ON" : "OFF"}</Badge>
+          <Badge>tempo ligado: {data?.api?.uptime_s ?? "-"}s</Badge>
+          <Badge tone={bot?.running ? "good" : "neutral"}>bot: {bot?.running ? "LIGADO" : "DESLIGADO"}</Badge>
+          <Badge tone={bot?.kill_switch?.enabled ? "bad" : "neutral"}>trava: {bot?.kill_switch?.enabled ? "ATIVA" : "INATIVA"}</Badge>
           <Badge tone={lic?.valid ? "good" : "warn"}>
-            licença: {lic?.valid ? "ATIVA" : (lic?.status || "N/A")}
+            licença: {lic?.valid ? "ATIVA" : licenseStatusPt(lic?.status)}
           </Badge>
         </div>
         {err ? <div className="mt-3 text-sm text-red-200/80">Erro: {err}</div> : null}
       </Card>
 
-      <Card title="Operação (runtime)">
+      <Card title="Operação (execução)">
         <Row k="last_cycle_start_utc" v={runtime?.last_cycle_start_utc} />
         <Row k="last_cycle_end_utc" v={runtime?.last_cycle_end_utc} />
         <Row k="last_cycle_duration_s" v={runtime?.last_cycle_duration_s} />
@@ -110,7 +167,7 @@ export default function Health({ token }) {
           A licença é exigida apenas para <b>LIVE</b> (testnet=false + dry-run desligado).
         </div>
         <div className="mt-3">
-          <Row k="status" v={lic?.status} />
+          <Row k="status" v={licenseStatusPt(lic?.status)} />
           <Row k="valid" v={lic?.valid} />
           <Row k="plan" v={lic?.plan} />
           <Row k="expires_at_utc" v={lic?.expires_at_utc} />

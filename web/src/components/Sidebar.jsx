@@ -20,7 +20,7 @@ export default function Sidebar({ active, onSelect, botOn }) {
         <span
           className={`rounded-full border px-2 py-1 text-xs font-mono ${botOn ? "border-green-500/40" : "border-white/15"}`}
         >
-          bot: {botOn ? "ON" : "OFF"}
+          bot: {botOn ? "LIGADO" : "DESLIGADO"}
         </span>
       </div>
       <div className="flex flex-col gap-2">

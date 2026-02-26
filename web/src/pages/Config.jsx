@@ -269,7 +269,7 @@ export default function Config({ token, setToken }) {
         title="Configurações (passo a passo)"
         right={
           <div className="flex items-center gap-2">
-            <Badge tone={st?.write_enabled ? "good" : "warn"}>escrita: {st?.write_enabled ? "OK" : "OFF"}</Badge>
+            <Badge tone={st?.write_enabled ? "good" : "warn"}>escrita: {st?.write_enabled ? "OK" : "DESLIGADA"}</Badge>
             <Button variant="secondary" onClick={() => refresh().catch(() => {})}>
               Recarregar
             </Button>
