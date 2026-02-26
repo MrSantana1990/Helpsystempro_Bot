@@ -26,9 +26,9 @@ Objetivo: rodar **24/7** em uma **VPS dedicada por cliente**, com acesso via web
 - (Opcional recomendado) Ative **IP whitelist** apontando para o IP da VPS.
 - Use uma senha forte para o painel (Caddy basic auth).
 - Mantenha `HSP_LIVE_TRADING=0` no piloto. Live só com trava + termo + licença.
+- Para 24/7, use `HSP_AUTOSTART_BOT=1` (recomendado) e mantenha `HSP_AUTOSTART_DRY_RUN=1` por segurança.
 
 ## Arquivos desta pasta
 - `deploy/vps/docker-compose.yml`: app + caddy (HTTPS + basic auth)
 - `deploy/vps/Caddyfile`: reverse proxy + TLS automático (Let's Encrypt)
 - `deploy/vps/.env.example`: variáveis do cliente
-

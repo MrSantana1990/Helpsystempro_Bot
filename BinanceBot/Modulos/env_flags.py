@@ -26,7 +26,7 @@ def get_runtime_flags() -> dict[str, object]:
     """
     Flags para evolução futura (VPS dedicada / auth), mantendo Local-first por padrão.
 
-    Aceita tanto nomes genÃ©ricos quanto prefixados:
+    Aceita tanto nomes genéricos quanto prefixados:
     - BASE_URL / HSP_BASE_URL
     - ENABLE_AUTH / HSP_ENABLE_AUTH
     - ENABLE_2FA / HSP_ENABLE_2FA

@@ -75,3 +75,4 @@ bash deploy/vps_multi/bin/gen-basicauth.sh admin "SENHA_FORTE"
   - termo aceito
   - licença válida
   - `HSP_LIVE_TRADING=1`
+- 24/7: `HSP_AUTOSTART_BOT=1` (recomendado) com `HSP_AUTOSTART_DRY_RUN=1` por segurança

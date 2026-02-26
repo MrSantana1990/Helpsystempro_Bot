@@ -355,6 +355,33 @@ def health() -> dict[str, Any]:
     return {"ok": True}
 
 
+@app.on_event("startup")
+def _autostart_bot() -> None:
+    """
+    Autostart opcional (para VPS 24/7).
+    Segurança:
+    - Por padrão, autostart roda em dry-run.
+    - Não inicia LIVE automaticamente.
+    """
+    try:
+        if not (env_flag("HSP_AUTOSTART_BOT", False) or env_flag("AUTOSTART_BOT", False)):
+            return
+        if bool(read_kill_switch().get("enabled", False)):
+            return
+
+        settings = load_settings()
+        dry_run = env_flag("HSP_AUTOSTART_DRY_RUN", True)
+        once = env_flag("HSP_AUTOSTART_ONCE", False)
+
+        # Nunca autostarta LIVE.
+        if not bool(settings.get("testnet", True)) and not bool(dry_run):
+            return
+
+        _bot_start(dry_run=bool(dry_run), once=bool(once))
+    except Exception:
+        return
+
+
 def _port_listening(host: str, port: int, timeout_s: float = 0.2) -> bool:
     try:
         with socket.create_connection((host, int(port)), timeout=timeout_s):

@@ -11,6 +11,8 @@ services:
       ENABLE_AUTH: "${ENABLE_AUTH:-1}"
       ENABLE_2FA: "${ENABLE_2FA:-0}"
       HSP_LIVE_TRADING: "${HSP_LIVE_TRADING:-0}"
+      HSP_AUTOSTART_BOT: "${HSP_AUTOSTART_BOT:-0}"
+      HSP_AUTOSTART_DRY_RUN: "${HSP_AUTOSTART_DRY_RUN:-1}"
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
