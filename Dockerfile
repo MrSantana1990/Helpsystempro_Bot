@@ -21,6 +21,5 @@ COPY --from=webbuild /app/portal ./portal
 
 EXPOSE 8502
 
-# Em container, normalmente usamos --host 0.0.0.0 e limitamos a exposiÃ§Ã£o via mapeamento de porta (127.0.0.1:...).
+# Em container, normalmente usamos --host 0.0.0.0 e limitamos a exposição via mapeamento de porta (127.0.0.1:...).
 CMD ["python","-m","uvicorn","BinanceBot.portal_api:app","--host","0.0.0.0","--port","8502"]
-
