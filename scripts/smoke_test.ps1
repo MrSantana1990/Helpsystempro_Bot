@@ -1,5 +1,6 @@
 param(
-  [string]$ApiBase = "http://127.0.0.1:8502"
+  [string]$ApiBase = "http://127.0.0.1:8502",
+  [string]$Token = ""
 )
 
 Set-StrictMode -Version Latest
@@ -15,13 +16,17 @@ function Fail($label, $err) {
 }
 
 function GetJson($url) {
-  $r = Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 10
+  $headers = @{}
+  if ($Token) { $headers["Authorization"] = "Bearer $Token" }
+  $r = Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 10 -Headers $headers
   return ($r.Content | ConvertFrom-Json)
 }
 
 function PostJson($url, $obj) {
   $body = ($obj | ConvertTo-Json -Depth 10)
-  $r = Invoke-WebRequest -UseBasicParsing $url -Method Post -ContentType "application/json" -Body $body -TimeoutSec 10
+  $headers = @{}
+  if ($Token) { $headers["Authorization"] = "Bearer $Token" }
+  $r = Invoke-WebRequest -UseBasicParsing $url -Method Post -ContentType "application/json" -Body $body -TimeoutSec 10 -Headers $headers
   return ($r.Content | ConvertFrom-Json)
 }
 
