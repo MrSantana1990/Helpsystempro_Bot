@@ -192,6 +192,15 @@ export default function Config({ token, setToken }) {
     const saved = (r.saved || []).join(", ") || "(nenhum)";
     const ignored = (r.ignored_blank || []).length ? " | ignorados vazios: " + r.ignored_blank.join(", ") : "";
     setEnvMsg("OK: key.env salvo: " + saved + ignored);
+    // Segurança básica: limpa os campos após salvar (as chaves podem ser vistas no DevTools enquanto você digita).
+    setEnv({
+      API_KEY: "",
+      API_SECRET: "",
+      NEWS_API_KEY: "",
+      TELEGRAM_API_KEY: "",
+      TELEGRAM_CHAT_ID: ""
+    });
+    setShow(false);
     await refresh();
   };
 
@@ -305,6 +314,10 @@ export default function Config({ token, setToken }) {
       <Card title="Passo 1 — key.env">
         <div className="text-sm text-white/70">
           Preencha o que você tiver agora. <span className="font-semibold">Telegram é opcional</span> (apenas alertas). Binance é necessário para o bot real.
+        </div>
+        <div className="mt-2 text-xs text-white/60">
+          Segurança: enquanto você digita, o navegador mantém os valores em memória/DOM (F12). Isso não dá para “esconder” do próprio computador.
+          Para evitar interceptação na rede, use sempre <span className="font-semibold">HTTPS</span> (no modo VPS) e nunca exponha a API em HTTP público.
         </div>
         <label className="mt-2 text-xs text-white/60">
           <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} /> Mostrar valores digitados
