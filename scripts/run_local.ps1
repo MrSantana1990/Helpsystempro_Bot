@@ -1,6 +1,7 @@
 param(
   [int]$Seed = 42,
-  [switch]$Mock
+  [switch]$Mock,
+  [switch]$Lan
 )
 
 $ErrorActionPreference = "Stop"
@@ -83,7 +84,23 @@ function Stop-OldPortalServer {
 Ensure-Venv
 $py = ".\\.venv\\Scripts\\python.exe"
 
-$env:HSP_PORTAL_TOKEN = "local-dev"
+if (-not $env:HSP_PORTAL_TOKEN) { $env:HSP_PORTAL_TOKEN = "local-dev" }
+
+$apiHost = "127.0.0.1"
+$panelHost = "127.0.0.1"
+
+if ($Lan) {
+  # LAN mode: permite acesso por outro dispositivo (celular). Recomendado com token aleatório + auth habilitado.
+  $apiHost = "0.0.0.0"
+  $panelHost = "0.0.0.0"
+
+  $env:HSP_LOCAL_ONLY = "0"
+  $env:HSP_ENABLE_AUTH = "1"
+
+  if ($env:HSP_PORTAL_TOKEN -eq "local-dev") {
+    $env:HSP_PORTAL_TOKEN = "lan-" + ([guid]::NewGuid().ToString("N"))
+  }
+}
 
 Write-Host "Usando Python:" (& $py -V)
 Write-Host "Instalando dependencias (venv)..." -ForegroundColor Cyan
@@ -100,7 +117,11 @@ if ($Mock) {
 
 Write-Host "Subindo API (FastAPI) em http://localhost:8502" -ForegroundColor Green
 Write-Host "Subindo PAINEL (React/Vite) em http://localhost:8501" -ForegroundColor Green
-Write-Host "Token (config + start/stop): local-dev" -ForegroundColor Yellow
+Write-Host ("Token (config + start/stop): " + $env:HSP_PORTAL_TOKEN) -ForegroundColor Yellow
+if ($Lan) {
+  Write-Host "LAN ligado: use o IP do seu PC no celular, ex: http://SEU_IP:8502 (API) e http://SEU_IP:8501 (painel)." -ForegroundColor Yellow
+  Write-Host "Dica: rode o painel web só se precisar. O app mobile usa a API diretamente." -ForegroundColor DarkGray
+}
 
 Stop-OldPortalServer
 Stop-Port 8501
@@ -111,7 +132,7 @@ Assert-PortFree 8502
 
 $api = Start-Process -PassThru -FilePath $py -ArgumentList @(
   "-m","uvicorn","BinanceBot.portal_api:app",
-  "--host","127.0.0.1","--port","8502"
+  "--host",$apiHost,"--port","8502"
 )
 
 try {
@@ -128,7 +149,9 @@ try {
 
   # garante que e o backend FastAPI (e nao o portal_server.py antigo)
   try {
-    $fx = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:8502/api/market/usdtbrl" -TimeoutSec 4
+    $headers = @{}
+    if ($env:HSP_ENABLE_AUTH -eq "1") { $headers["Authorization"] = ("Bearer " + $env:HSP_PORTAL_TOKEN) }
+    $fx = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:8502/api/market/usdtbrl" -TimeoutSec 4 -Headers $headers
     $obj = $fx.Content | ConvertFrom-Json
     if ($null -eq $obj.price) { throw "Sem campo price" }
   } catch {
@@ -145,7 +168,7 @@ try {
       cmd /c "npm install"
     }
     Write-Host "Rodando painel React (Vite)..." -ForegroundColor Cyan
-    cmd /c "npm run dev -- --host 127.0.0.1 --port 8501"
+    cmd /c ("npm run dev -- --host " + $panelHost + " --port 8501")
   } finally {
     Pop-Location
   }

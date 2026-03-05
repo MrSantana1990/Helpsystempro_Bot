@@ -17,6 +17,16 @@ cd D:\DEV\Helpsystempro_Bot; powershell -NoProfile -ExecutionPolicy Bypass -File
 - Portal: `http://localhost:8501`
 - API: `http://localhost:8502/docs`
 
+### Modo LAN (celular / React Native)
+Para testar no celular (Android/iOS) na mesma rede Wi‑Fi:
+
+```powershell
+cd D:\DEV\Helpsystempro_Bot; powershell -NoProfile -ExecutionPolicy Bypass -File .\run_local.ps1 -Lan
+```
+
+- A API vai aceitar conexões da rede (bind `0.0.0.0`) e o script gera um **token aleatório**.
+- No celular, use `http://IP_DO_PC:8502` como Base URL e cole o token.
+
 Dados fictícios (para ver o painel preenchido):
 ```powershell
 .\run_local.ps1 -Mock -Seed 42
@@ -31,3 +41,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -To
 - Manual geral: `docs/MANUAL.md`
 - Manual comercial: `docs/MANUAL_COMERCIAL.md`
 - Modelo de chaves: `BinanceBot/Configs/key.env.example`
+
+## App Mobile (Android/iOS)
+Código em `mobile/` (Expo). Instruções: `mobile/README.md`.
