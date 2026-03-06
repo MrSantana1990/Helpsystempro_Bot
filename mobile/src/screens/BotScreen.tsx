@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
@@ -51,6 +51,24 @@ export default function BotScreen({ baseUrl, token }: { baseUrl: string; token: 
     setBusy(true);
     try {
       await apiPost(baseUrl, "/api/bot/start", { token, query: { dry_run: true, once: false } });
+      await refresh();
+    } catch (e: any) {
+      setErr(e?.message || String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runOnceDryRun = async () => {
+    setErr("");
+    setBusy(true);
+    try {
+      // Observação: a API não inicia novo processo se já estiver rodando.
+      // Para forçar execução imediata, reiniciamos em modo "--once".
+      if (bot?.running) {
+        await apiPost(baseUrl, "/api/bot/stop", { token });
+      }
+      await apiPost(baseUrl, "/api/bot/start", { token, query: { dry_run: true, once: true } });
       await refresh();
     } catch (e: any) {
       setErr(e?.message || String(e));
@@ -112,6 +130,27 @@ export default function BotScreen({ baseUrl, token }: { baseUrl: string; token: 
           <Button title="Play (dry-run)" onPress={() => startDryRun()} disabled={busy || !token} style={{ flex: 1 }} />
         </View>
         <View style={{ height: 10 }} />
+        <Button
+          title="Rodar 1 ciclo agora (dry-run)"
+          variant="secondary"
+          onPress={() => {
+            if (!token) return;
+            if (bot?.running) {
+              Alert.alert(
+                "Rodar 1 ciclo",
+                "O bot está ligado. Para rodar um ciclo imediatamente, ele será reiniciado em modo de 1 ciclo. Continuar?",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  { text: "Continuar", style: "destructive", onPress: () => runOnceDryRun().catch(() => {}) }
+                ]
+              );
+              return;
+            }
+            runOnceDryRun().catch(() => {});
+          }}
+          disabled={busy || !token}
+        />
+        <View style={{ height: 10 }} />
         <Button title="Parar bot" variant="danger" onPress={() => stop()} disabled={busy || !token} />
         <View style={{ height: 10 }} />
         <View style={styles.row}>
@@ -158,4 +197,3 @@ const styles = StyleSheet.create({
   },
   warnText: { color: "rgba(255,231,176,0.9)", fontSize: 13, lineHeight: 18 }
 });
-

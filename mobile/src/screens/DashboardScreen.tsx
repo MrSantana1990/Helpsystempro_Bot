@@ -13,10 +13,15 @@ type Overview = {
 
 type BotStatus = { running: boolean; kill_switch?: { enabled?: boolean } };
 
+type DecisionRow = { ts_utc?: string; symbol?: string; action?: string; score?: number; confidence?: number };
+type TradeRow = { ts_utc?: string; symbol?: string; side?: string; status?: string; quote_qty?: number; price?: number };
+
 export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; token: string }) {
   const [ov, setOv] = useState<Overview | null>(null);
   const [bot, setBot] = useState<BotStatus | null>(null);
   const [fx, setFx] = useState<{ price: number } | null>(null);
+  const [decisions, setDecisions] = useState<DecisionRow[]>([]);
+  const [trades, setTrades] = useState<TradeRow[]>([]);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -24,14 +29,18 @@ export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; t
     setErr("");
     setBusy(true);
     try {
-      const [o, b, f] = await Promise.all([
+      const [o, b, fxRes, decRes, trdRes] = await Promise.all([
         apiGet<Overview>(baseUrl, "/api/overview", { token: token || undefined }),
         apiGet<BotStatus>(baseUrl, "/api/bot/status", { token: token || undefined }),
-        apiGet<{ price: number }>(baseUrl, "/api/market/usdtbrl", { token: token || undefined })
+        apiGet<{ price: number }>(baseUrl, "/api/market/usdtbrl", { token: token || undefined }),
+        apiGet<{ rows: DecisionRow[] }>(baseUrl, "/api/decisions", { token: token || undefined, query: { limit: 20 } }),
+        apiGet<{ rows: TradeRow[] }>(baseUrl, "/api/trades", { token: token || undefined, query: { limit: 20 } })
       ]);
       setOv(o);
       setBot(b);
-      setFx(f);
+      setFx(fxRes);
+      setDecisions(Array.isArray(decRes?.rows) ? decRes.rows : []);
+      setTrades(Array.isArray(trdRes?.rows) ? trdRes.rows : []);
     } catch (e: any) {
       setErr(e?.message || String(e));
     } finally {
@@ -78,6 +87,12 @@ export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; t
     }
   };
 
+  const fmtTs = (ts?: string) => {
+    const s = String(ts || "");
+    const m = s.match(/T(\d{2}:\d{2})/);
+    return m ? m[1] : s ? s.slice(0, 16) : "-";
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Card title="Visão geral">
@@ -106,10 +121,11 @@ export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; t
         <View style={{ height: 10 }} />
         <View style={styles.row}>
           <Button title="Atualizar" variant="secondary" onPress={() => refresh()} disabled={busy} style={{ flex: 1 }} />
-          <Button title="Play (dry-run)" onPress={() => startDryRun()} disabled={busy || !token} style={{ flex: 1 }} />
+          <Button title="Play (dry-run)" onPress={() => startDryRun()} disabled={busy || !token || !!bot?.running} style={{ flex: 1 }} />
         </View>
         <View style={{ height: 10 }} />
         <Button title="Parar bot" variant="danger" onPress={() => stopBot()} disabled={busy || !token} />
+        {!!bot?.running ? <Text style={styles.p}>Observação: o bot já está ligado. Veja a aba Bot para rodar 1 ciclo agora.</Text> : null}
         {busy ? (
           <View style={{ marginTop: 10 }}>
             <ActivityIndicator />
@@ -117,6 +133,33 @@ export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; t
         ) : null}
         {err ? <Text style={[styles.p, styles.err]}>Erro: {err}</Text> : null}
         {!token ? <Text style={styles.p}>Dica: defina o token em Config para liberar Play/Stop.</Text> : null}
+      </Card>
+
+      <Card title="Atividade (últimos registros)">
+        <Text style={styles.pTitle}>Decisões (até 6)</Text>
+        <View style={{ gap: 8, marginTop: 8 }}>
+          {decisions.slice(0, 6).map((d, idx) => (
+            <View key={`${d.ts_utc || "d"}-${idx}`} style={styles.itemRow}>
+              <Text style={styles.itemLeft}>{fmtTs(d.ts_utc)}</Text>
+              <Text style={styles.itemMain}>{String(d.symbol || "-")}</Text>
+              <Text style={styles.itemRight}>{String(d.action || "-")}</Text>
+            </View>
+          ))}
+          {!decisions.length ? <Text style={styles.p}>Sem decisões ainda. Para gerar, rode 1 ciclo (aba Bot) ou aguarde o intervalo.</Text> : null}
+        </View>
+
+        <View style={{ height: 14 }} />
+        <Text style={styles.pTitle}>Trades (até 6)</Text>
+        <View style={{ gap: 8, marginTop: 8 }}>
+          {trades.slice(0, 6).map((t, idx) => (
+            <View key={`${t.ts_utc || "t"}-${idx}`} style={styles.itemRow}>
+              <Text style={styles.itemLeft}>{fmtTs(t.ts_utc)}</Text>
+              <Text style={styles.itemMain}>{String(t.symbol || "-")}</Text>
+              <Text style={styles.itemRight}>{String(t.side || "-")}</Text>
+            </View>
+          ))}
+          {!trades.length ? <Text style={styles.p}>Sem trades ainda. Em dry-run/testnet o bot só registra trade quando decide comprar/vender.</Text> : null}
+        </View>
       </Card>
 
       <Card title="Disclaimers">
@@ -137,6 +180,19 @@ const styles = StyleSheet.create({
   kpiValue: { color: theme.colors.text, fontSize: 20, fontWeight: "900", marginTop: 4 },
   row: { flexDirection: "row", gap: 10 },
   p: { color: theme.colors.textDim, fontSize: 13, lineHeight: 18 },
-  err: { color: "rgba(239,68,68,0.85)", marginTop: 10 }
+  err: { color: "rgba(239,68,68,0.85)", marginTop: 10 },
+  pTitle: { color: theme.colors.text, fontSize: 13, fontWeight: "900" },
+  itemRow: {
+    flexDirection: "row",
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: "rgba(0,0,0,0.12)",
+    paddingHorizontal: 10,
+    paddingVertical: 10
+  },
+  itemLeft: { color: theme.colors.textMute, width: 54, fontFamily: "monospace", fontSize: 12 },
+  itemMain: { color: theme.colors.text, flex: 1, fontWeight: "900" },
+  itemRight: { color: theme.colors.textDim, width: 90, textAlign: "right", fontFamily: "monospace" }
 });
-
