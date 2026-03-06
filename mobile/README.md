@@ -23,6 +23,7 @@ No celular, use:
 ## Rodar o app
 ```powershell
 cd D:\DEV\Helpsystempro_Bot\mobile
+npm install
 npm run start
 ```
 
@@ -38,4 +39,3 @@ Recomendado:
 - Binance API Key sem withdraw
 - IP whitelist da VPS
 - Token forte + auth habilitado
-

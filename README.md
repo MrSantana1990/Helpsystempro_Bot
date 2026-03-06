@@ -44,3 +44,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -To
 
 ## App Mobile (Android/iOS)
 Código em `mobile/` (Expo). Instruções: `mobile/README.md`.
+
+Nota: o app mobile usa Expo SDK 54 para compatibilidade com o Expo Go da Play Store. Se você tinha uma instalação anterior, rode `npm install` em `mobile/` novamente.
