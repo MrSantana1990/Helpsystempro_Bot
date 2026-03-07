@@ -34,7 +34,7 @@ Depois:
 ## Se aparecer “Project is incompatible with this version of Expo Go”
 Isso acontece quando o projeto usa um **Expo SDK mais novo** do que o Expo Go da Play Store/App Store suporta naquele momento.
 
-Este repo usa **Expo SDK 53** para maximizar compatibilidade com Expo Go.
+Este repo usa **Expo SDK 54** para compatibilidade com o Expo Go atual.
 
 Se você já tinha instalado dependências antes (ou trocou de SDK), faça um reset:
 

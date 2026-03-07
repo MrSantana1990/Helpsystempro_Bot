@@ -80,4 +80,4 @@ Obs.: o repo **não** tem `package.json` na raiz. Para rodar `npm run dev`, entr
 ## App Mobile (Android/iOS)
 Código em `mobile/` (Expo). Instruções: `mobile/README.md`.
 
-Nota: o app mobile usa Expo SDK 53 para compatibilidade com o Expo Go da Play Store. Se você tinha uma instalação anterior, rode `npm install` em `mobile/` novamente.
+Nota: o app mobile usa Expo SDK 54 para compatibilidade com o Expo Go atual. Se você tinha uma instalação anterior, rode `npm install` em `mobile/` novamente.
