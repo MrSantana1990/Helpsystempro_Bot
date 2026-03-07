@@ -1,7 +1,12 @@
+name: helpsystempro-bot
+
 services:
   helpsystempro-bot:
     build: .
     ports:
+      # Painel (SPA) servido pela prÃ³pria API dentro do container.
+      # Mapeia 8501 para manter o mesmo padrÃ£o do modo dev (run_local.ps1).
+      - "127.0.0.1:8501:8502"
       - "127.0.0.1:8502:8502"
     environment:
       # Token do portal (start/stop/config).
