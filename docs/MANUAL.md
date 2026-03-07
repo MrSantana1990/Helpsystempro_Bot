@@ -8,6 +8,7 @@ Links:
 - Portfólio / site: https://helpsystempro.netlify.app/
 - WhatsApp (implantação): +55 11 94002-5492
 - GitHub: https://github.com/MrSantana1990
+- Cloud Admin (usuários/2FA/tenants): `docs/CLOUD_ADMIN.md`
 
 ---
 

@@ -15,6 +15,15 @@ Objetivo: rodar **24/7** em uma **VPS dedicada por cliente**, com acesso via web
 - Domínio apontando para a VPS (ex: `bot.cliente.com`)
 - Docker + Docker Compose instalados
 
+## Rodar local rápido (antes da VPS)
+No Windows (PowerShell), no root do repo:
+```powershell
+cd D:\DEV\Helpsystempro_Bot; .\run_local.ps1
+```
+Isso sobe:
+- Painel: `http://localhost:8501`
+- API: `http://localhost:8502/api/health`
+
 ## Passo a passo (resumo)
 1) Clone o repo na VPS
 2) Configure variáveis em `.env`
@@ -32,3 +41,6 @@ Objetivo: rodar **24/7** em uma **VPS dedicada por cliente**, com acesso via web
 - `deploy/vps/docker-compose.yml`: app + caddy (HTTPS + basic auth)
 - `deploy/vps/Caddyfile`: reverse proxy + TLS automático (Let's Encrypt)
 - `deploy/vps/.env.example`: variáveis do cliente
+
+## Plataforma Cloud (opcional / próxima fase)
+Se você estiver usando a plataforma **Cloud** (multiusuário + 2FA), o stack fica em `cloud/compose/` e o painel admin em `cloud/admin/`.

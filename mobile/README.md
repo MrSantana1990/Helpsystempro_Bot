@@ -31,6 +31,23 @@ Depois:
 - Leia o QR Code com o Expo Go
 - ou selecione `a` (Android) no terminal para abrir no emulador
 
+## Se aparecer “Project is incompatible with this version of Expo Go”
+Isso acontece quando o projeto usa um **Expo SDK mais novo** do que o Expo Go da Play Store/App Store suporta naquele momento.
+
+Este repo usa **Expo SDK 53** para maximizar compatibilidade com Expo Go.
+
+Se você já tinha instalado dependências antes (ou trocou de SDK), faça um reset:
+
+```powershell
+cd D:\DEV\Helpsystempro_Bot\mobile
+Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
+Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue
+npm install
+npx expo start
+```
+
+Se ainda assim falhar, use `npx expo start --tunnel` (evita problemas de rede/LAN) ou crie um **Development Build** (sem Expo Go).
+
 ## Produção (VPS)
 Para produção, aponte a Base URL para o domínio HTTPS (VPS):
 - `https://bot.seudominio.com`

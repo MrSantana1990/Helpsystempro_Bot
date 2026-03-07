@@ -42,7 +42,26 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -To
 - Manual comercial: `docs/MANUAL_COMERCIAL.md`
 - Modelo de chaves: `BinanceBot/Configs/key.env.example`
 
+## Plataforma Cloud (multiusuário + 2FA)
+O modo **Cloud** (multiusuário, tenants, 2FA obrigatório e painel admin) fica em `cloud/`.
+
+Rodar local (Docker + painel admin):
+```powershell
+cd D:\DEV\Helpsystempro_Bot\cloud\compose
+Copy-Item .env.example .env -Force
+docker compose up -d --build
+
+cd D:\DEV\Helpsystempro_Bot\cloud\admin
+npm install
+npm run dev
+```
+
+- API Cloud: `http://localhost:8802/health`
+- Admin Cloud: `http://localhost:8801`
+
+Obs.: o repo **não** tem `package.json` na raiz. Para rodar `npm run dev`, entre na pasta do projeto desejado (`web/`, `landing/`, `cloud/admin/`, `mobile/`).
+
 ## App Mobile (Android/iOS)
 Código em `mobile/` (Expo). Instruções: `mobile/README.md`.
 
-Nota: o app mobile usa Expo SDK 54 para compatibilidade com o Expo Go da Play Store. Se você tinha uma instalação anterior, rode `npm install` em `mobile/` novamente.
+Nota: o app mobile usa Expo SDK 53 para compatibilidade com o Expo Go da Play Store. Se você tinha uma instalação anterior, rode `npm install` em `mobile/` novamente.
