@@ -3,8 +3,10 @@ import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from "
 import Button from "../ui/Button";
 import Card from "../ui/Card";
 import Field from "../ui/Field";
+import QrScanModal from "../ui/QrScanModal";
 import { theme } from "../theme";
 import { apiGet } from "../lib/api";
+import { parseConnectQr } from "../lib/qr";
 import type { MobileSettings } from "../lib/storage";
 
 export default function ConnectScreen({
@@ -18,6 +20,7 @@ export default function ConnectScreen({
   const [token, setToken] = useState(initial?.token || "");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [scanOn, setScanOn] = useState(false);
 
   const canSubmit = useMemo(() => String(baseUrl).trim().length > 0, [baseUrl]);
 
@@ -61,6 +64,8 @@ export default function ConnectScreen({
         <View style={{ height: 10 }} />
         <Field label="Token (recomendado)" value={token} onChangeText={setToken} placeholder="cole o token do console" secureTextEntry />
         <View style={{ height: 12 }} />
+        <Button title="Escanear QR do portal" variant="secondary" onPress={() => setScanOn(true)} disabled={busy} />
+        <View style={{ height: 10 }} />
         <Button title="Testar conexão" onPress={() => test()} disabled={!canSubmit || busy} />
         <View style={{ height: 10 }} />
         {busy ? <ActivityIndicator /> : null}
@@ -79,6 +84,22 @@ export default function ConnectScreen({
           onPress={() => Linking.openURL("https://helpsystempro.netlify.app/").catch(() => {})}
         />
       </Card>
+
+      <QrScanModal
+        visible={scanOn}
+        onClose={() => setScanOn(false)}
+        onScanned={(data) => {
+          setScanOn(false);
+          const p = parseConnectQr(data);
+          if (!p) {
+            setMsg("Erro: QR inválido. Gere o QR no portal (Configurações → Token).");
+            return;
+          }
+          setBaseUrl(p.baseUrl);
+          setToken(p.token);
+          setMsg("OK: dados do QR aplicados. Agora teste a conexão.");
+        }}
+      />
     </ScrollView>
   );
 }
@@ -93,4 +114,3 @@ const styles = StyleSheet.create({
   err: { color: "rgba(239,68,68,0.85)" },
   ok: { color: "rgba(34,197,94,0.85)" }
 });
-

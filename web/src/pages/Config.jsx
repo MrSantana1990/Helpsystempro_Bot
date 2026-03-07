@@ -3,6 +3,7 @@ import Card from "../components/Card.jsx";
 import Button from "../components/Button.jsx";
 import Badge from "../components/Badge.jsx";
 import { apiGet, apiPost } from "../lib/api.js";
+import QRCode from "qrcode";
 
 const ENV_FIELDS = [
   { k: "API_KEY", label: "Binance API Key", hint: "Obrigatório para rodar o bot real.", optional: false },
@@ -117,11 +118,37 @@ export default function Config({ token, setToken }) {
     discovery_exclude_bases_csv: ""
   });
 
+  const [qrOn, setQrOn] = useState(false);
+  const [qrUrl, setQrUrl] = useState("");
+
   const refresh = async () => {
     const r = await apiGet("/api/config/status", { token });
     setSt(r);
     setSettings(JSON.stringify(r.settings || {}, null, 2));
   };
+
+  const mobileConnect = useMemo(() => {
+    const loc = window.location;
+    const proto = loc.protocol || "http:";
+    const host = loc.hostname || "localhost";
+    const port = String(loc.port || "");
+    const baseUrl = port === "8501" ? `${proto}//${host}:8502` : loc.origin;
+    return {
+      kind: "helpsystem-connect",
+      v: 1,
+      baseUrl,
+      token: String(token || "").trim()
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!qrOn) return;
+    setQrUrl("");
+    const payload = JSON.stringify(mobileConnect);
+    QRCode.toDataURL(payload, { margin: 1, scale: 6 })
+      .then(setQrUrl)
+      .catch(() => setQrUrl(""));
+  }, [qrOn, mobileConnect]);
 
   useEffect(() => {
     refresh().catch(() => {});
@@ -308,6 +335,43 @@ export default function Config({ token, setToken }) {
           <div className="text-xs text-white/60">
             settings: <span className="font-mono">{st?.settings_path || "-"}</span>
           </div>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-white/10 bg-black/10 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-sm font-extrabold">Conectar no app (QR Code)</div>
+              <div className="mt-1 text-xs text-white/60">
+                No app mobile, vocÃª pode digitar manualmente ou escanear um QR com <span className="font-mono">baseUrl</span> + token.
+              </div>
+            </div>
+            <Button variant="secondary" onClick={() => setQrOn((v) => !v)}>
+              {qrOn ? "Ocultar QR" : "Mostrar QR"}
+            </Button>
+          </div>
+
+          {qrOn ? (
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr] md:items-start">
+              <div className="flex items-center justify-center rounded-xl border border-white/10 bg-black/20 p-3">
+                {qrUrl ? (
+                  <img src={qrUrl} alt="QR Code de conexÃ£o (baseUrl + token)" className="h-[200px] w-[200px] rounded-lg" />
+                ) : (
+                  <div className="text-xs text-white/60">Gerando QRâ€¦</div>
+                )}
+              </div>
+              <div className="text-xs text-white/70">
+                <div className="text-white/80 font-bold">ConteÃºdo</div>
+                <div className="mt-1 rounded-xl border border-white/10 bg-black/20 p-3 font-mono">
+                  baseUrl: {mobileConnect.baseUrl}
+                  <br />
+                  token: {mobileConnect.token || "(vazio)"}
+                </div>
+                <div className="mt-2 text-white/60">
+                  Dica: no modo LAN, abra o painel usando o IP do PC (ex: <span className="font-mono">http://192.168.x.x:8501</span>) para o QR gerar o host correto.
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </Card>
 

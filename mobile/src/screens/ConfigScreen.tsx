@@ -3,8 +3,10 @@ import { Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native
 import Button from "../ui/Button";
 import Card from "../ui/Card";
 import Field from "../ui/Field";
+import QrScanModal from "../ui/QrScanModal";
 import { theme } from "../theme";
 import { clearSettings, saveSettings } from "../lib/storage";
+import { parseConnectQr } from "../lib/qr";
 
 export default function ConfigScreen({
   baseUrl,
@@ -18,6 +20,7 @@ export default function ConfigScreen({
   const [b, setB] = useState(baseUrl);
   const [t, setT] = useState(token);
   const [msg, setMsg] = useState("");
+  const [scanOn, setScanOn] = useState(false);
 
   const save = async () => {
     setMsg("");
@@ -52,6 +55,8 @@ export default function ConfigScreen({
         <View style={{ height: 10 }} />
         <Field label="Token (recomendado)" value={t} onChangeText={setT} placeholder="cole o token" secureTextEntry />
         <View style={{ height: 12 }} />
+        <Button title="Escanear QR do portal" variant="secondary" onPress={() => setScanOn(true)} />
+        <View style={{ height: 10 }} />
         <Button title="Salvar" onPress={() => save().catch((e) => setMsg("Erro: " + e.message))} />
         <View style={{ height: 10 }} />
         <Button title="Limpar conexão (logout)" variant="danger" onPress={() => logout().catch(() => {})} />
@@ -67,6 +72,22 @@ export default function ConfigScreen({
         <View style={{ height: 10 }} />
         <Button title="Abrir portfólio" variant="secondary" onPress={() => Linking.openURL("https://helpsystempro.netlify.app/").catch(() => {})} />
       </Card>
+
+      <QrScanModal
+        visible={scanOn}
+        onClose={() => setScanOn(false)}
+        onScanned={(data) => {
+          setScanOn(false);
+          const p = parseConnectQr(data);
+          if (!p) {
+            setMsg("Erro: QR inválido. Gere o QR no portal (Configurações → Token).");
+            return;
+          }
+          setB(p.baseUrl);
+          setT(p.token);
+          setMsg("OK: dados do QR aplicados. Agora clique em Salvar.");
+        }}
+      />
     </ScrollView>
   );
 }
@@ -77,4 +98,3 @@ const styles = StyleSheet.create({
   err: { color: "rgba(239,68,68,0.85)" },
   ok: { color: "rgba(34,197,94,0.85)" }
 });
-
