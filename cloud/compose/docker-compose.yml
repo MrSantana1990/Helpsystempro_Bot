@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: helpsystem
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ../api
+    environment:
+      PORT: ${PORT:-8802}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      HSP_ENCRYPTION_KEY_BASE64: ${HSP_ENCRYPTION_KEY_BASE64}
+      HSP_BOOTSTRAP_CODE: ${HSP_BOOTSTRAP_CODE}
+      HSP_BASE_URL: ${HSP_BASE_URL}
+      NODE_ENV: production
+    depends_on:
+      - db
+    ports:
+      - "127.0.0.1:${PORT:-8802}:8802"
+
+volumes:
+  db_data:
+
