@@ -18,8 +18,8 @@ try {
   }
   Write-Host "Rodando Expo (mobile)..." -ForegroundColor Green
   Write-Host "Dica: use o QR Code no Expo Go." -ForegroundColor DarkGray
-  cmd /c "npm run start"
+  # --clear: evita cache antigo (ajuda quando vocÃª atualiza o app e parece "igual").
+  cmd /c "npm run start -- --clear"
 } finally {
   Pop-Location
 }
-

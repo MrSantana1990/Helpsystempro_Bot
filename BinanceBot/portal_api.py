@@ -352,7 +352,34 @@ def _bot_stop() -> dict[str, Any]:
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    return {"ok": True}
+    return {"ok": True, "started_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(API_STARTED_AT))}
+
+
+@app.get("/api/version")
+def version() -> dict[str, Any]:
+    """
+    Retorna informaÃ§Ãµes de versÃ£o para confirmar que o cliente estÃ¡ rodando a build correta.
+    Em local-dev, tenta ler o hash do git (se disponÃ­vel).
+    """
+    git = None
+    try:
+        git = (
+            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=str(REPO_DIR), stderr=subprocess.DEVNULL)
+            .decode("utf-8", errors="replace")
+            .strip()
+        )
+    except Exception:
+        git = None
+
+    return {
+        "ok": True,
+        "app": "HelpSystem • Binance Bot",
+        "api_version": "1.0",
+        "git": git,
+        "python": sys.version.split(" ")[0],
+        "started_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(API_STARTED_AT)),
+        "paths": {"repo": str(REPO_DIR), "data": str(DATA_DIR), "portal": str(PORTAL_DIR)},
+    }
 
 
 @app.on_event("startup")
@@ -917,6 +944,81 @@ def usdtbrl() -> dict[str, Any]:
 @app.get("/api/portfolio")
 def portfolio() -> dict[str, Any]:
     return {"rows": _read_portfolio(), "path": str(_PORTFOLIO_PATH)}
+
+
+@app.get("/api/portfolio/valued")
+def portfolio_valued() -> dict[str, Any]:
+    """
+    Carteira manual (portfolio.json) com precificaÃ§Ã£o pÃºblica (pares USDT + USDTBRL).
+    NÃ£o exige API_KEY/API_SECRET.
+    """
+    cache_key = "portfolio:valued"
+    cached = _cache_get(cache_key, ttl_s=6.0)
+    if cached is not None:
+        return cached
+
+    rows_in = _read_portfolio()
+    if not rows_in:
+        out = {
+            "enabled": False,
+            "message": "Sem carteira manual. Adicione ativos em Painel de Controle → Saldo (inteligente).",
+            "rows": [],
+            "total_usdt": 0.0,
+            "total_brl": None,
+        }
+        _cache_set(cache_key, out)
+        return out
+
+    fx = usdtbrl()
+    usdt_brl = float(fx.get("price") or 0.0) or 0.0
+
+    holdings: list[dict[str, Any]] = []
+    total_usdt = 0.0
+    unvalued = 0
+    for it in rows_in:
+        asset = str(it.get("asset") or "").strip().upper()
+        qty = float(it.get("qty") or 0.0)
+        if not asset or qty <= 0:
+            continue
+        item: dict[str, Any] = {"asset": asset, "qty": qty}
+        if asset == "USDT":
+            item["price_usdt"] = 1.0
+            item["value_usdt"] = qty
+            total_usdt += qty
+        else:
+            px = _public_price(f"{asset}USDT")
+            if px is None:
+                item["price_usdt"] = None
+                item["value_usdt"] = None
+                item["unvalued_reason"] = "Sem par {ASSET}USDT (ou indisponÃ­vel)."
+                unvalued += 1
+            else:
+                item["price_usdt"] = px
+                item["value_usdt"] = qty * px
+                total_usdt += float(item["value_usdt"])
+
+        if usdt_brl > 0 and item.get("value_usdt") is not None:
+            item["value_brl"] = float(item["value_usdt"]) * usdt_brl
+        else:
+            item["value_brl"] = None
+
+        holdings.append(item)
+
+    holdings.sort(key=lambda x: float(x.get("value_usdt") or 0.0), reverse=True)
+    total_brl = total_usdt * usdt_brl if usdt_brl > 0 else None
+
+    out = {
+        "enabled": True,
+        "fx": fx,
+        "rows": holdings,
+        "total_usdt": total_usdt,
+        "total_brl": total_brl,
+        "unvalued_count": unvalued,
+        "note": "Estimativa: precifica por pares USDT + USDTBRL. Alguns ativos podem nÃ£o ter par direto.",
+        "path": str(_PORTFOLIO_PATH),
+    }
+    _cache_set(cache_key, out)
+    return out
 
 
 @app.post("/api/portfolio/save")

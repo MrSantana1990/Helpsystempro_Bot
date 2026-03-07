@@ -2,13 +2,17 @@ import React from "react";
 import { Search, RefreshCw } from "lucide-react";
 import Button from "./Button.jsx";
 
-export default function Topbar({ onDeposit, onRefreshAll, onPlay, onStop, botOn }) {
+export default function Topbar({ onDeposit, onRefreshAll, onPlay, onStop, botOn, version }) {
+  const git = version?.git ? String(version.git) : "";
+  const apiV = version?.api_version ? String(version.api_version) : "";
+  const build = apiV || git ? `v${apiV || "?"}${git ? ` • ${git}` : ""}` : "";
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl2 border border-white/10 bg-black/15 p-3 shadow-soft">
       <div className="flex min-w-0 items-center gap-3">
         <div className="h-9 w-9 rounded-xl border border-accent/30 bg-gradient-to-br from-cyan-400/20 to-purple-500/10" />
         <div className="min-w-0">
           <div className="truncate text-sm font-extrabold tracking-wide">HelpSystem</div>
+          {build ? <div className="truncate text-[11px] text-white/45">{build}</div> : null}
           <div className="truncate text-xs text-white/70">Binance Bot • Painel React (local)</div>
         </div>
       </div>
@@ -38,4 +42,3 @@ export default function Topbar({ onDeposit, onRefreshAll, onPlay, onStop, botOn 
     </div>
   );
 }
-

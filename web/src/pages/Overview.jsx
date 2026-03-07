@@ -13,6 +13,7 @@ export default function Overview({ token, botOn }) {
   const [mini, setMini] = useState([]);
   const [news, setNews] = useState(null);
   const [acct, setAcct] = useState(null);
+  const [pfValued, setPfValued] = useState(null);
   const [reg, setReg] = useState(null);
   const [portfolio, setPortfolio] = useState([]);
   const [pfAsset, setPfAsset] = useState("BTC");
@@ -25,13 +26,14 @@ export default function Overview({ token, botOn }) {
 
   const refresh = async (sym = marketSymbol) => {
     setErr("");
-    const [ovv, fxr, tkr, kln, acctR, pfR, regR] = await Promise.all([
+    const [ovv, fxr, tkr, kln, acctR, pfR, pfvR, regR] = await Promise.all([
       apiGet("/api/overview", { token }),
       apiGet("/api/market/usdtbrl", { token }),
       apiGet("/api/market/tickers?symbols=" + encodeURIComponent("BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT"), { token }),
       apiGet("/api/market/klines?symbol=" + encodeURIComponent(sym) + "&interval=15m&limit=64", { token }),
       apiGet("/api/account/summary", { token }).catch(() => null),
       apiGet("/api/portfolio", { token }).catch(() => ({ rows: [] })),
+      apiGet("/api/portfolio/valued", { token }).catch(() => null),
       apiGet("/api/symbols/registry", { token }).catch(() => null)
     ]);
     setOv(ovv);
@@ -40,6 +42,7 @@ export default function Overview({ token, botOn }) {
     setMini(kln.closes || []);
     setAcct(acctR);
     setPortfolio((pfR && pfR.rows) || []);
+    setPfValued(pfvR);
     setReg(regR);
     setMarketSymbol(sym);
     apiGet("/api/news?term=crypto&limit=6", { token }).then(setNews).catch(() => {});
@@ -62,6 +65,8 @@ export default function Overview({ token, botOn }) {
   const acctBrl = acct?.enabled && Number.isFinite(Number(acct.total_brl)) ? Number(acct.total_brl) : null;
   const acctAvailUsdt = acct?.enabled ? Number(acct.available_usdt || 0) : null;
   const acctAvailBrl = acct?.enabled && Number.isFinite(Number(acct.available_brl)) ? Number(acct.available_brl) : null;
+  const pfTotalUsdt = pfValued?.enabled ? Number(pfValued.total_usdt || 0) : null;
+  const pfTotalBrl = pfValued?.enabled && Number.isFinite(Number(pfValued.total_brl)) ? Number(pfValued.total_brl) : null;
 
   const estUsdtFromInputs = useMemo(() => {
     const u = Number(String(balUSDT).replace(",", "."));
@@ -71,7 +76,14 @@ export default function Overview({ token, botOn }) {
     return null;
   }, [balBRL, balUSDT, usdtbrl]);
 
-  const estUsdt = acct?.enabled && Number.isFinite(acctUsdt) && acctUsdt > 0 ? acctUsdt : estUsdtFromInputs;
+  const estUsdt =
+    acct?.enabled && Number.isFinite(acctUsdt) && acctUsdt > 0
+      ? acctUsdt
+      : estUsdtFromInputs != null
+        ? estUsdtFromInputs
+        : pfValued?.enabled && Number.isFinite(Number(pfTotalUsdt)) && Number(pfTotalUsdt) > 0
+          ? Number(pfTotalUsdt)
+          : null;
   const estBrl = estUsdt != null && usdtbrl > 0 ? estUsdt * usdtbrl : null;
 
   const calcTopup = async () => {
@@ -165,6 +177,15 @@ export default function Overview({ token, botOn }) {
                 <span className="font-mono text-white/80">{fmtNumber(acctAvailUsdt, 4)} USDT</span>
                 {acctAvailBrl != null ? <span className="text-white/60"> (≈ {fmtNumber(acctAvailBrl, 2)} R$)</span> : null}
               </div>
+            </div>
+          ) : pfValued?.enabled ? (
+            <div className="mb-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-sm text-white/80">
+              Carteira manual valorizada: <span className="font-mono font-extrabold">{fmtNumber(pfTotalUsdt, 4)} USDT</span>
+              {pfTotalBrl != null ? <span className="text-white/60"> (â‰ˆ {fmtNumber(pfTotalBrl, 2)} R$)</span> : null}
+              <div className="mt-1 text-xs text-white/60">{pfValued.note}</div>
+              {Number(pfValued.unvalued_count || 0) > 0 ? (
+                <div className="mt-2 text-xs text-white/60">ObservaÃ§Ã£o: {pfValued.unvalued_count} ativo(s) sem par direto USDT.</div>
+              ) : null}
             </div>
           ) : (
             <div className="mb-3 rounded-xl border border-yellow-500/25 bg-yellow-500/10 p-3 text-sm">
@@ -278,6 +299,25 @@ export default function Overview({ token, botOn }) {
               ) : (
                 <div className="mt-2 text-xs text-white/60">Sem itens. (Ex.: BTC 0.01, ETH 0.2)</div>
               )}
+
+              {pfValued?.enabled && Array.isArray(pfValued.rows) && pfValued.rows.length ? (
+                <div className="mt-3">
+                  <div className="text-xs text-white/60">Valores (estimativa)</div>
+                  <div className="mt-2 max-h-[220px] overflow-auto rounded-xl border border-white/10">
+                    {(pfValued.rows || []).slice(0, 20).map((a) => (
+                      <div key={a.asset} className="flex items-center justify-between gap-3 border-b border-white/5 px-3 py-2">
+                        <div className="font-extrabold">{a.asset}</div>
+                        <div className="text-right">
+                          <div className="font-mono text-sm">{fmtNumber(a.qty, a.asset === "USDT" ? 2 : 8)}</div>
+                          <div className="text-xs text-white/60">
+                            {a.value_usdt != null ? `â‰ˆ ${fmtNumber(a.value_usdt, 2)} USDT` : "sem cotaÃ§Ã£o USDT"}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 

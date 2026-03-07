@@ -16,10 +16,32 @@ type BotStatus = { running: boolean; kill_switch?: { enabled?: boolean } };
 type DecisionRow = { ts_utc?: string; symbol?: string; action?: string; score?: number; confidence?: number };
 type TradeRow = { ts_utc?: string; symbol?: string; side?: string; status?: string; quote_qty?: number; price?: number };
 
+type HoldingRow = { asset?: string; qty?: number; free?: number; locked?: number; value_usdt?: number; value_brl?: number };
+type AccountSummary = {
+  enabled: boolean;
+  message?: string;
+  testnet?: boolean;
+  rows?: HoldingRow[];
+  total_usdt?: number;
+  total_brl?: number;
+  note?: string;
+};
+type PortfolioValued = {
+  enabled: boolean;
+  message?: string;
+  rows?: HoldingRow[];
+  total_usdt?: number;
+  total_brl?: number;
+  note?: string;
+  unvalued_count?: number;
+};
+
 export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; token: string }) {
   const [ov, setOv] = useState<Overview | null>(null);
   const [bot, setBot] = useState<BotStatus | null>(null);
   const [fx, setFx] = useState<{ price: number } | null>(null);
+  const [acct, setAcct] = useState<AccountSummary | null>(null);
+  const [pfv, setPfv] = useState<PortfolioValued | null>(null);
   const [decisions, setDecisions] = useState<DecisionRow[]>([]);
   const [trades, setTrades] = useState<TradeRow[]>([]);
   const [err, setErr] = useState("");
@@ -29,16 +51,20 @@ export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; t
     setErr("");
     setBusy(true);
     try {
-      const [o, b, fxRes, decRes, trdRes] = await Promise.all([
+      const [o, b, fxRes, acctRes, pfvRes, decRes, trdRes] = await Promise.all([
         apiGet<Overview>(baseUrl, "/api/overview", { token: token || undefined }),
         apiGet<BotStatus>(baseUrl, "/api/bot/status", { token: token || undefined }),
         apiGet<{ price: number }>(baseUrl, "/api/market/usdtbrl", { token: token || undefined }),
+        apiGet<AccountSummary>(baseUrl, "/api/account/summary", { token: token || undefined }).catch(() => ({ enabled: false } as any)),
+        apiGet<PortfolioValued>(baseUrl, "/api/portfolio/valued", { token: token || undefined }).catch(() => ({ enabled: false } as any)),
         apiGet<{ rows: DecisionRow[] }>(baseUrl, "/api/decisions", { token: token || undefined, query: { limit: 20 } }),
         apiGet<{ rows: TradeRow[] }>(baseUrl, "/api/trades", { token: token || undefined, query: { limit: 20 } })
       ]);
       setOv(o);
       setBot(b);
       setFx(fxRes);
+      setAcct(acctRes);
+      setPfv(pfvRes);
       setDecisions(Array.isArray(decRes?.rows) ? decRes.rows : []);
       setTrades(Array.isArray(trdRes?.rows) ? trdRes.rows : []);
     } catch (e: any) {
@@ -93,6 +119,17 @@ export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; t
     return m ? m[1] : s ? s.slice(0, 16) : "-";
   };
 
+  const fxRate = Number(fx?.price || 0);
+  const valued = acct?.enabled ? acct : pfv?.enabled ? pfv : null;
+  const valuedRows = Array.isArray(valued?.rows) ? (valued?.rows || []).slice(0, 8) : [];
+  const totalUsdt = valued && Number.isFinite(Number(valued.total_usdt)) ? Number(valued.total_usdt) : null;
+  const totalBrl =
+    valued && Number.isFinite(Number(valued.total_brl))
+      ? Number(valued.total_brl)
+      : totalUsdt != null && fxRate > 0
+        ? totalUsdt * fxRate
+        : null;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Card title="Visão geral">
@@ -133,6 +170,47 @@ export default function DashboardScreen({ baseUrl, token }: { baseUrl: string; t
         ) : null}
         {err ? <Text style={[styles.p, styles.err]}>Erro: {err}</Text> : null}
         {!token ? <Text style={styles.p}>Dica: defina o token em Config para liberar Play/Stop.</Text> : null}
+      </Card>
+
+      <Card title="Carteira (moedas)">
+        {acct?.enabled ? (
+          <Text style={styles.p}>Fonte: Binance (carteira real/testnet conforme configuração).</Text>
+        ) : pfv?.enabled ? (
+          <Text style={styles.p}>Fonte: carteira manual (Portfolio) com precificação pública (USDT + USDTBRL).</Text>
+        ) : (
+          <Text style={styles.p}>
+            Sem carteira disponível. Configure API_KEY/API_SECRET no painel web ou adicione ativos manualmente no Painel de Controle.
+          </Text>
+        )}
+
+        <View style={{ height: 10 }} />
+        <View style={styles.grid}>
+          <View style={styles.kpi}>
+            <Text style={styles.kpiLabel}>Total (USDT)</Text>
+            <Text style={styles.kpiValue}>{totalUsdt != null ? totalUsdt.toFixed(4) : "-"}</Text>
+          </View>
+          <View style={styles.kpi}>
+            <Text style={styles.kpiLabel}>Total (R$)</Text>
+            <Text style={styles.kpiValue}>{totalBrl != null ? totalBrl.toFixed(2) : "-"}</Text>
+          </View>
+        </View>
+
+        {valued && valuedRows.length ? (
+          <View style={{ gap: 8, marginTop: 10 }}>
+            {valuedRows.map((h, idx) => {
+              const asset = String(h.asset || "-");
+              const qty = Number(h.qty ?? 0) + Number(h.free ?? 0) + Number(h.locked ?? 0);
+              const vU = Number(h.value_usdt);
+              return (
+                <View key={`${asset}-${idx}`} style={styles.itemRow}>
+                  <Text style={styles.itemMain}>{asset}</Text>
+                  <Text style={styles.itemRight}>{Number.isFinite(qty) ? qty.toFixed(asset === "USDT" ? 2 : 8) : "-"}</Text>
+                  <Text style={styles.itemRight}>{Number.isFinite(vU) ? `${vU.toFixed(2)} USDT` : "-"}</Text>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
       </Card>
 
       <Card title="Atividade (últimos registros)">
