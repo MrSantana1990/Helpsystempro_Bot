@@ -24,6 +24,10 @@ Isso sobe:
 - Painel: `http://localhost:8501`
 - API: `http://localhost:8502/api/health`
 
+## Guia completo (VPS)
+Passo a passo completo para colocar no ar:
+- `deploy/vps/GUIA_PASSO_A_PASSO.md`
+
 ## Passo a passo (resumo)
 1) Clone o repo na VPS
 2) Configure variáveis em `.env`

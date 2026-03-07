@@ -4,6 +4,7 @@ services:
     build:
       context: ../..
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       HSP_PORTAL_TOKEN: "${HSP_PORTAL_TOKEN}"
       HSP_LOCAL_ONLY: "${HSP_LOCAL_ONLY:-0}"

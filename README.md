@@ -37,6 +37,22 @@ Smoke test:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -Token local-dev
 ```
 
+## Subir tudo (2 terminais) — web/api + mobile
+Terminal 1 (API + Painel + LAN):
+```powershell
+cd D:\DEV\Helpsystempro_Bot; .\run_local.ps1 -Lan
+```
+
+Terminal 2 (Mobile / Expo):
+```powershell
+cd D:\DEV\Helpsystempro_Bot; .\run_mobile.ps1
+```
+
+Ou (abre 2 terminais automaticamente):
+```powershell
+cd D:\DEV\Helpsystempro_Bot; .\run_dev_all.ps1 -Mock -Seed 42
+```
+
 ## Documentação
 - Manual geral: `docs/MANUAL.md`
 - Manual comercial: `docs/MANUAL_COMERCIAL.md`
