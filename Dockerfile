@@ -6,7 +6,11 @@ COPY web/package.json web/package-lock.json ./web/
 RUN cd web && npm ci
 COPY web ./web
 RUN cd web && npm run build
-RUN mkdir -p /app/portal && cp -r /app/web/dist/* /app/portal/
+# O build do Vite estÃ¡ configurado para gerar em /app/portal (web/vite.config.js outDir="../portal").
+# Mantemos fallback para /app/web/dist caso a config mude no futuro.
+RUN if [ -f /app/portal/index.html ]; then echo "portal OK"; \
+    elif [ -d /app/web/dist ]; then mkdir -p /app/portal && cp -r /app/web/dist/* /app/portal/; \
+    else echo "ERRO: build do portal nÃ£o encontrado."; ls -la /app; ls -la /app/web; exit 1; fi
 
 FROM python:3.12-slim AS runtime
 WORKDIR /app
