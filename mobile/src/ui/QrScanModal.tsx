@@ -34,15 +34,15 @@ export default function QrScanModal({
 
         {!permission ? (
           <View style={styles.center}>
-            <Text style={styles.p}>Carregando permissÃµes da cÃ¢meraâ€¦</Text>
+            <Text style={styles.p}>Carregando permissões da câmera…</Text>
           </View>
         ) : !permission.granted ? (
           <View style={styles.center}>
-            <Text style={styles.p}>PermissÃ£o da cÃ¢mera necessÃ¡ria para escanear QR.</Text>
+            <Text style={styles.p}>Permissão da câmera necessária para escanear QR.</Text>
             <View style={{ height: 12 }} />
-            <Button title="Permitir cÃ¢mera" onPress={() => requestPermission().catch(() => {})} />
+            <Button title="Permitir câmera" onPress={() => requestPermission().catch(() => {})} />
             <View style={{ height: 10 }} />
-            <Text style={styles.pSmall}>Se vocÃª negou antes, ative em ConfiguraÃ§Ãµes do sistema.</Text>
+            <Text style={styles.pSmall}>Se você negou antes, ative em Configurações do sistema.</Text>
           </View>
         ) : (
           <View style={styles.cameraWrap}>
@@ -57,7 +57,7 @@ export default function QrScanModal({
             />
             <View style={styles.overlay}>
               <View style={styles.frame} />
-              <Text style={styles.hint}>Aponte para o QR do portal (ConfiguraÃ§Ãµes â†’ Token).</Text>
+              <Text style={styles.hint}>Aponte para o QR do portal (Configurações → Token).</Text>
             </View>
           </View>
         )}
@@ -104,4 +104,3 @@ const styles = StyleSheet.create({
   },
   hint: { marginTop: 14, color: "rgba(255,255,255,0.80)", fontSize: 12, textAlign: "center" }
 });
-

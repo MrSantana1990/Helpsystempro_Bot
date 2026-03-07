@@ -45,8 +45,10 @@ function Stop-Port($port) {
       }
     } catch {}
 
-    $pids = $pids | Where-Object { $_ -and ($_ -as [int]) -gt 0 } | Sort-Object -Unique
-    if (-not $pids -or $pids.Count -eq 0) { break }
+    # Em PowerShell, um pipeline com 1 item pode "colapsar" para escalar (sem .Count).
+    # Forçamos array para evitar erro no StrictMode.
+    $pids = @($pids | Where-Object { $_ -and ($_ -as [int]) -gt 0 } | Sort-Object -Unique)
+    if ($pids.Count -eq 0) { break }
 
     foreach ($pid in $pids) {
       Write-Host "Porta $port em uso. Encerrando PID $pid... (tentativa $attempt/6)" -ForegroundColor Yellow

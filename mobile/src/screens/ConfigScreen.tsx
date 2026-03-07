@@ -80,8 +80,17 @@ export default function ConfigScreen({
           setScanOn(false);
           const p = parseConnectQr(data);
           if (!p) {
+            Alert.alert("QR inválido", "Gere o QR no portal (Configurações → Token) e tente novamente.");
             setMsg("Erro: QR inválido. Gere o QR no portal (Configurações → Token).");
             return;
+          }
+          if (/localhost|127\.0\.0\.1/i.test(p.baseUrl)) {
+            Alert.alert(
+              "QR com localhost",
+              "Esse QR foi gerado com “localhost”, que não funciona no celular. Abra o painel no PC usando http://SEU_IP:8501 (modo -Lan) e gere o QR novamente."
+            );
+          } else {
+            Alert.alert("QR lido", "Dados aplicados. Agora toque em “Salvar”.");
           }
           setB(p.baseUrl);
           setT(p.token);
