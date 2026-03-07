@@ -350,13 +350,93 @@ def _bot_stop() -> dict[str, Any]:
     return _bot_status()
 
 
-@app.get("/api/health")
-def health() -> dict[str, Any]:
-    return {"ok": True, "started_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(API_STARTED_AT))}
+@app.get("/api/health") 
+def health() -> dict[str, Any]: 
+    return {"ok": True, "started_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(API_STARTED_AT))} 
+ 
+ 
+def _is_private_ipv4(ip: str) -> bool:
+    ip = (ip or "").strip()
+    if not ip or ":" in ip:
+        return False
+    if ip.startswith("10."):
+        return True
+    if ip.startswith("192.168."):
+        return True
+    if ip.startswith("172."):
+        try:
+            b = int(ip.split(".")[1])
+            return 16 <= b <= 31
+        except Exception:
+            return False
+    return False
 
 
-@app.get("/api/version")
-def version() -> dict[str, Any]:
+def _detect_lan_ipv4_candidates() -> list[str]:
+    out: list[str] = []
+
+    # Melhor tentativa: IP usado na rota padrão (não depende de DNS).
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            if ip and ip not in out:
+                out.append(ip)
+        finally:
+            try:
+                s.close()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Fallback: hostname -> lista de IPs
+    try:
+        _, _, addrs = socket.gethostbyname_ex(socket.gethostname())
+        for ip in addrs:
+            if ip and ip not in out:
+                out.append(ip)
+    except Exception:
+        pass
+
+    # Remove loopback e vazio
+    out = [ip for ip in out if ip and not ip.startswith("127.")]
+
+    # Ordena: preferir 192.168.* > 10.* > 172.16-31.*
+    def _score(ip: str) -> int:
+        if ip.startswith("192.168."):
+            return 0
+        if ip.startswith("10."):
+            return 1
+        if ip.startswith("172."):
+            return 2
+        return 3
+
+    out.sort(key=_score)
+    return out
+
+
+@app.get("/api/net/lan_ip")
+def net_lan_ip() -> dict[str, Any]:
+    """
+    Retorna um IPv4 provável para acesso na LAN.
+    Útil para gerar QR no portal quando o usuário abriu o painel via localhost,
+    mas quer conectar o app no celular.
+    """
+    candidates = _detect_lan_ipv4_candidates()
+    lan_ip = ""
+    for ip in candidates:
+        if _is_private_ipv4(ip):
+            lan_ip = ip
+            break
+    if not lan_ip and candidates:
+        lan_ip = candidates[0]
+    return {"ok": True, "lan_ip": lan_ip, "candidates": candidates}
+
+
+@app.get("/api/version") 
+def version() -> dict[str, Any]: 
     """
     Retorna informaÃ§Ãµes de versÃ£o para confirmar que o cliente estÃ¡ rodando a build correta.
     Em local-dev, tenta ler o hash do git (se disponÃ­vel).

@@ -120,6 +120,7 @@ export default function Config({ token, setToken }) {
 
   const [qrOn, setQrOn] = useState(false);
   const [qrUrl, setQrUrl] = useState("");
+  const [lanIp, setLanIp] = useState("");
 
   const refresh = async () => {
     const r = await apiGet("/api/config/status", { token });
@@ -132,14 +133,15 @@ export default function Config({ token, setToken }) {
     const proto = loc.protocol || "http:";
     const host = loc.hostname || "localhost";
     const port = String(loc.port || "");
-    const baseUrl = port === "8501" ? `${proto}//${host}:8502` : loc.origin;
+    const baseHost = (host === "localhost" || host === "127.0.0.1") && lanIp ? lanIp : host;
+    const baseUrl = port === "8501" ? `${proto}//${baseHost}:8502` : loc.origin;
     return {
       kind: "helpsystem-connect",
       v: 1,
       baseUrl,
       token: String(token || "").trim()
     };
-  }, [token]);
+  }, [token, lanIp]);
 
   useEffect(() => {
     if (!qrOn) return;
@@ -149,6 +151,14 @@ export default function Config({ token, setToken }) {
       .then(setQrUrl)
       .catch(() => setQrUrl(""));
   }, [qrOn, mobileConnect]);
+
+  useEffect(() => {
+    if (!qrOn) return;
+    setLanIp("");
+    apiGet("/api/net/lan_ip", { token })
+      .then((r) => setLanIp(String(r?.lan_ip || "")))
+      .catch(() => {});
+  }, [qrOn, token]);
 
   useEffect(() => {
     refresh().catch(() => {});
@@ -366,14 +376,20 @@ export default function Config({ token, setToken }) {
                   <br />
                   token: {mobileConnect.token || "(vazio)"}
                 </div>
-                <div className="mt-2 text-white/60">
-                  Dica: no modo LAN, abra o painel usando o IP do PC (ex: <span className="font-mono">http://192.168.x.x:8501</span>) para o QR gerar o host correto.
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </Card>
+                <div className="mt-2 text-white/60"> 
+                  Dica: no modo LAN, abra o painel usando o IP do PC (ex: <span className="font-mono">http://192.168.x.x:8501</span>) para o QR gerar o host correto. 
+                </div> 
+                {String(mobileConnect.baseUrl || "").includes("localhost") || String(mobileConnect.baseUrl || "").includes("127.0.0.1") ? (
+                  <div className="mt-2 text-amber-200/90">
+                    Atenção: <span className="font-mono">baseUrl</span> está como <span className="font-mono">localhost</span> e não funciona no celular.
+                    Rode <span className="font-mono">.\run_local.ps1 -Lan</span> e gere o QR novamente (ou abra o painel pelo IP).
+                  </div>
+                ) : null}
+              </div> 
+            </div> 
+          ) : null} 
+        </div> 
+      </Card> 
 
       <Card title="Passo 1 — key.env">
         <div className="text-sm text-white/70">
