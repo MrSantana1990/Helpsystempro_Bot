@@ -53,6 +53,24 @@ weights:
   bollinger: 0.3
   macd: 0.15
   sentiment: 0.1
+
+# ----------------- Decision Engine 2.0 -----------------
+decision_v2_weights:
+  technical: 0.35
+  sentiment: 0.2
+  event: 0.2
+  regime: 0.15
+  liquidity: 0.1
+
+regime_volatility_target_1h: 0.018
+position_size_min_multiplier: 0.25
+position_size_max_multiplier: 1.5
+
+event_news_max_items: 20
+event_news_weight: 0.5
+event_market_weight: 0.3
+event_sentiment_weight: 0.2
+event_bus_history_limit: 500
 news_term: crypto
 db_path: data/trading.sqlite3
 

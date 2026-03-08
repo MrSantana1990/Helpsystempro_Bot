@@ -1,15 +1,38 @@
-# HelpSystem Pro — Admin (Web)
+# HelpSystem Pro — Cloud Admin (Web)
 
-Painel central (web) para gerenciar **usuários/tenants/planos** da plataforma Cloud.
+Console administrativa enterprise para operação em VPS.
 
-Este painel conversa com a API Cloud via endpoints REST em:
+## Rotas de UI
+
+- `/login`
+- `/onboarding/bootstrap`
+- `/onboarding/2fa`
+- `/console`
+
+## Endpoints principais usados
+
+- `GET /api/public/config`
+- `GET /api/public/bootstrap-status`
 - `POST /api/bootstrap-admin`
 - `POST /api/totp/setup-start`
 - `POST /api/totp/enable`
 - `POST /api/login`
-- `GET/POST /api/admin/*`
+- `GET /api/me`
+- `GET /api/admin/dashboard`
+- `GET /api/admin/subscribers`
+- `GET/POST /api/admin/users`
+- `GET/POST /api/admin/tenants`
+- `GET /api/admin/links`
+- `POST /api/admin/grant`
+- `GET/POST /api/admin/licenses`
+- `GET /api/admin/billing`
+- `POST /api/admin/billing/event`
+- `GET /api/admin/security`
+- `GET /api/admin/audit`
+- `GET /api/admin/settings`
 
-## Rodar (dev)
+## Rodar em desenvolvimento
+
 ```bash
 cd cloud/admin
 npm install
@@ -17,5 +40,5 @@ npm run dev
 ```
 
 Variável opcional:
-- `VITE_API_BASE=http://localhost:8802`
 
+- `VITE_API_BASE=http://localhost:8802`

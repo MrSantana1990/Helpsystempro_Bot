@@ -1,0 +1,103 @@
+name: helpsystempro-full
+
+services:
+  bot-local:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helpsystempro-bot-local
+    ports:
+      - "${HSP_BIND_ADDR:-127.0.0.1}:8501:8502"
+      - "${HSP_BIND_ADDR:-127.0.0.1}:8502:8502"
+    environment:
+      HSP_PORTAL_TOKEN: ${HSP_PORTAL_TOKEN:-local-dev}
+      HSP_LOCAL_ONLY: ${HSP_LOCAL_ONLY:-0}
+      HSP_ENABLE_AUTH: ${HSP_ENABLE_AUTH:-0}
+      BASE_URL: ${BASE_URL:-}
+      ENABLE_AUTH: ${ENABLE_AUTH:-0}
+      ENABLE_2FA: ${ENABLE_2FA:-0}
+      LIVE_MODE: ${LIVE_MODE:-0}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./BinanceBot/Configs:/app/BinanceBot/Configs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8502/api/health', timeout=2)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  cloud-db:
+    image: postgres:16-alpine
+    container_name: helpsystempro-cloud-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: helpsystem
+    volumes:
+      - cloud_db_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${HSP_POSTGRES_PORT:-5432}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d helpsystem"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  cloud-api:
+    build:
+      context: ./cloud/api
+      dockerfile: Dockerfile
+    container_name: helpsystempro-cloud-api
+    environment:
+      PORT: 8802
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@cloud-db:5432/helpsystem}
+      JWT_SECRET: ${JWT_SECRET}
+      HSP_ENCRYPTION_KEY_BASE64: ${HSP_ENCRYPTION_KEY_BASE64}
+      HSP_BOOTSTRAP_CODE: ${HSP_BOOTSTRAP_CODE}
+      HSP_MASTER_EMAIL: ${HSP_MASTER_EMAIL}
+      HSP_BASE_URL: ${HSP_BASE_URL:-http://localhost:8802}
+      HSP_BILLING_PROVIDER: ${HSP_BILLING_PROVIDER:-mercado_pago}
+      HSP_BILLING_GRACE_DAYS: ${HSP_BILLING_GRACE_DAYS:-3}
+      HSP_MP_ACCESS_TOKEN: ${HSP_MP_ACCESS_TOKEN:-}
+      HSP_MP_WEBHOOK_SECRET: ${HSP_MP_WEBHOOK_SECRET:-}
+      HSP_MP_NOTIFICATION_URL: ${HSP_MP_NOTIFICATION_URL:-}
+      NODE_ENV: production
+    depends_on:
+      cloud-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${HSP_CLOUD_PORT:-8802}:8802"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8802/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  cloud-admin:
+    build:
+      context: ./cloud/admin
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8802}
+    container_name: helpsystempro-cloud-admin
+    depends_on:
+      cloud-api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${HSP_ADMIN_PORT:-8801}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+
+volumes:
+  cloud_db_data:

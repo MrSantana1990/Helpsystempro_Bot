@@ -1,16 +1,40 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import Card from "../components/Card.jsx";
 import Button from "../components/Button.jsx";
 import Badge from "../components/Badge.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { apiGet, apiPost } from "../lib/api.js";
 import QRCode from "qrcode";
 
-const ENV_FIELDS = [
-  { k: "API_KEY", label: "Binance API Key", hint: "Obrigatório para rodar o bot real.", optional: false },
-  { k: "API_SECRET", label: "Binance API Secret", hint: "Obrigatório para rodar o bot real.", optional: false },
-  { k: "NEWS_API_KEY", label: "NewsAPI Key", hint: "Opcional (notícias). Sem isso, o bot roda sem notícias.", optional: true },
-  { k: "TELEGRAM_API_KEY", label: "Telegram Bot Token", hint: "Opcional (alertas).", optional: true },
-  { k: "TELEGRAM_CHAT_ID", label: "Telegram Chat ID", hint: "Opcional (alertas).", optional: true }
+const ENV_SECTIONS = [
+  {
+    key: "binance",
+    title: "Conectar Binance",
+    tipTitle: "Chave Binance",
+    tipText:
+      "A API Key e API Secret permitem leitura de saldo e envio de ordens.\nRecomendado: habilitar Spot Trading e manter saque desabilitado.",
+    fields: [
+      { k: "API_KEY", label: "API Key", hint: "Obrigatório para operar em conta real.", optional: false },
+      { k: "API_SECRET", label: "API Secret", hint: "Obrigatório para operar em conta real.", optional: false }
+    ]
+  },
+  {
+    key: "news",
+    title: "Análise de notícias (opcional)",
+    tipTitle: "News API",
+    tipText: "Sem essa chave o sistema continua funcionando, apenas sem a camada de notícias.",
+    fields: [{ k: "NEWS_API_KEY", label: "News API Key", hint: "Opcional para enriquecer sinais.", optional: true }]
+  },
+  {
+    key: "telegram",
+    title: "Alertas no Telegram (opcional)",
+    tipTitle: "Telegram",
+    tipText: "Use token do BotFather e Chat ID para receber alertas de risco e operação.",
+    fields: [
+      { k: "TELEGRAM_API_KEY", label: "Bot Token", hint: "Opcional.", optional: true },
+      { k: "TELEGRAM_CHAT_ID", label: "Chat ID", hint: "Opcional.", optional: true }
+    ]
+  }
 ];
 
 const PROFILES = {
@@ -217,6 +241,15 @@ export default function Config({ token, setToken }) {
       .join("\n");
   }, [st]);
 
+  const connectionStatus = useMemo(() => {
+    const p = st?.env_present || {};
+    return {
+      binance: Boolean(p.API_KEY && p.API_SECRET),
+      news: Boolean(p.NEWS_API_KEY),
+      telegram: Boolean(p.TELEGRAM_API_KEY && p.TELEGRAM_CHAT_ID)
+    };
+  }, [st]);
+
   const saveEnv = async () => {
     setEnvMsg("");
     const body = Object.fromEntries(
@@ -299,23 +332,25 @@ export default function Config({ token, setToken }) {
       .filter(Boolean);
 
     setSettings(JSON.stringify(obj, null, 2));
-    setSettingsMsg("OK: modo simples aplicado no editor. Agora clique em “Salvar settings.yml”.");
+    setSettingsMsg('OK: modo simples aplicado no editor. Agora clique em "Salvar settings.yml".');
   };
 
   const applyProfile = () => {
     const p = PROFILES[profile]?.values;
     if (!p) return;
     setSimple((prev) => ({ ...prev, ...p }));
-    setSettingsMsg(`OK: perfil aplicado (${PROFILES[profile]?.label || profile}). Agora clique em “Aplicar no editor (JSON)” e depois “Salvar settings.yml”.`);
+    setSettingsMsg(
+      `OK: perfil aplicado (${PROFILES[profile]?.label || profile}). Agora clique em "Aplicar no editor (JSON)" e depois em "Salvar settings.yml".`
+    );
   };
 
   return (
     <div className="flex flex-col gap-3">
       <Card
-        title="Configurações (passo a passo)"
+        title="Configuracao guiada (passo a passo)"
         right={
           <div className="flex items-center gap-2">
-            <Badge tone={st?.write_enabled ? "good" : "warn"}>escrita: {st?.write_enabled ? "OK" : "DESLIGADA"}</Badge>
+            <Badge tone={st?.write_enabled ? "good" : "warn"}>gravacao: {st?.write_enabled ? "OK" : "DESLIGADA"}</Badge>
             <Button variant="secondary" onClick={() => refresh().catch(() => {})}>
               Recarregar
             </Button>
@@ -323,7 +358,7 @@ export default function Config({ token, setToken }) {
         }
       >
         <div className="text-sm text-white/70">
-          Token padrão no modo local: <span className="font-mono">local-dev</span>.
+          Token padrao no modo local: <span className="font-mono">local-dev</span>.
         </div>
         <details className="mt-2 text-sm text-white/70">
           <summary className="cursor-pointer select-none text-white/80">Onde pego as chaves?</summary>
@@ -343,7 +378,7 @@ export default function Config({ token, setToken }) {
             />
           </div>
           <div className="text-xs text-white/60">
-            settings: <span className="font-mono">{st?.settings_path || "-"}</span>
+            arquivo de configuracao: <span className="font-mono">{st?.settings_path || "-"}</span>
           </div>
         </div>
 
@@ -366,7 +401,7 @@ export default function Config({ token, setToken }) {
                 {qrUrl ? (
                   <img src={qrUrl} alt="QR Code de conexão (baseUrl + token)" className="h-[200px] w-[200px] rounded-lg" />
                 ) : (
-                  <div className="text-xs text-white/60">Gerando QRâ€¦</div>
+                  <div className="text-xs text-white/60">Gerando QR...</div>
                 )}
               </div>
               <div className="text-xs text-white/70">
@@ -389,53 +424,77 @@ export default function Config({ token, setToken }) {
             </div> 
           ) : null} 
         </div> 
-      </Card> 
-
-      <Card title="Passo 1 — key.env">
+      </Card>
+      <Card title="Passo 1 — Conectar servicos">
         <div className="text-sm text-white/70">
-          Preencha o que você tiver agora. <span className="font-semibold">Telegram é opcional</span> (apenas alertas). Binance é necessário para o bot real.
+          Configure o essencial para comecar. Binance e obrigatorio para operar com saldo real. Noticias e Telegram sao opcionais.
         </div>
         <div className="mt-2 text-xs text-white/60">
-          Segurança: enquanto você digita, o navegador mantém os valores em memória/DOM (F12). Isso não dá para “esconder” do próprio computador.
-          Para evitar interceptação na rede, use sempre <span className="font-semibold">HTTPS</span> (no modo VPS) e nunca exponha a API em HTTP público.
+          Seguranca: enquanto voce digita, os valores ficam em memoria do navegador (F12). Para proteger trafego em producao,
+          use <span className="font-semibold">HTTPS</span> na VPS e nunca exponha a API em HTTP publico.
         </div>
-        <label className="mt-2 text-xs text-white/60">
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Badge tone={connectionStatus.binance ? "good" : "warn"}>
+            Binance: {connectionStatus.binance ? "conectada" : "pendente"}
+          </Badge>
+          <Badge tone={connectionStatus.news ? "good" : "neutral"}>
+            Notícias: {connectionStatus.news ? "ativa" : "desligada"}
+          </Badge>
+          <Badge tone={connectionStatus.telegram ? "good" : "neutral"}>
+            Telegram: {connectionStatus.telegram ? "ativo" : "desligado"}
+          </Badge>
+        </div>
+
+        <label className="mt-3 text-xs text-white/60">
           <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} /> Mostrar valores digitados
         </label>
-        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-          {ENV_FIELDS.map(({ k, label, hint, optional }) => (
-            <div key={k}>
-              <div className="flex items-baseline justify-between gap-2 text-xs text-white/60">
-                <div className="truncate">
-                  {k} <span className="text-white/40">— {label}</span>
-                </div>
-                {optional ? <span className="text-white/40">opcional</span> : null}
+
+        <div className="mt-3 grid grid-cols-1 gap-3">
+          {ENV_SECTIONS.map((section) => (
+            <div key={section.key} className="rounded-xl border border-white/10 bg-black/10 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="text-sm font-extrabold">{section.title}</div>
+                <HelpTip title={section.tipTitle} text={section.tipText} />
               </div>
-              <input
-                className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
-                type={show ? "text" : "password"}
-                value={env[k]}
-                onChange={(e) => setEnv((p) => ({ ...p, [k]: e.target.value }))}
-              />
-              <div className="mt-1 text-xs text-white/40">{hint}</div>
+              <div className={`grid grid-cols-1 gap-2 ${section.fields.length > 1 ? "md:grid-cols-2" : ""}`}>
+                {section.fields.map(({ k, label, hint, optional }) => (
+                  <div key={k}>
+                    <div className="flex items-baseline justify-between gap-2 text-xs text-white/60">
+                      <div className="truncate">
+                        {label} <span className="font-mono text-white/40">({k})</span>
+                      </div>
+                      {optional ? <span className="text-white/40">opcional</span> : <span className="text-white/40">obrigatório</span>}
+                    </div>
+                    <input
+                      className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm outline-none focus:border-white/25"
+                      type={show ? "text" : "password"}
+                      value={env[k]}
+                      onChange={(e) => setEnv((p) => ({ ...p, [k]: e.target.value }))}
+                    />
+                    <div className="mt-1 text-xs text-white/40">{hint}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
-        <div className="mt-3 flex items-center gap-2">
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button variant="primary" onClick={() => saveEnv().catch((e) => setEnvMsg("Erro: " + e.message))}>
-            Salvar key.env
+            Salvar conexoes
           </Button>
           {envMsg ? <div className="text-sm text-white/70">{envMsg}</div> : null}
         </div>
         <div className="mt-3">
-          <div className="text-xs text-white/60">Detectado:</div>
+          <div className="text-xs text-white/60">Status de conexao detectado:</div>
           <textarea className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 p-3 font-mono text-xs" rows={5} readOnly value={presentText} />
         </div>
       </Card>
 
-      <Card title="Passo 2 — settings.yml">
+      <Card title="Passo 2 — Estrategia e limites">
         <div className="text-sm text-white/70">
-          Modo simples: ajuste os campos principais e aplique no editor. Depois clique em <span className="font-semibold">Salvar settings.yml</span>.
+          Modo simples: ajuste os campos principais e aplique no editor. Depois clique em <span className="font-semibold">Salvar configuracoes</span>.
         </div>
 
         <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto] md:items-end">
@@ -767,7 +826,7 @@ export default function Config({ token, setToken }) {
           </Button>
         </div>
 
-        <div className="mt-4 text-xs text-white/60">Editor avançado (JSON → YAML). Se não souber, use o modo simples acima.</div>
+        <div className="mt-4 text-xs text-white/60">Editor avancado (JSON → YAML). Se nao souber, use o modo simples acima.</div>
         <textarea
           className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 p-3 font-mono text-xs outline-none focus:border-white/25"
           rows={16}
@@ -776,7 +835,7 @@ export default function Config({ token, setToken }) {
         />
         <div className="mt-3 flex items-center gap-2">
           <Button variant="primary" onClick={() => saveSettings().catch((e) => setSettingsMsg("Erro: " + e.message))}>
-            Salvar settings.yml
+            Salvar configuracoes
           </Button>
           {!settingsMsg ? null : <div className="text-sm text-white/70">{settingsMsg}</div>}
         </div>
@@ -784,3 +843,6 @@ export default function Config({ token, setToken }) {
     </div>
   );
 }
+
+
+

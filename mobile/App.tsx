@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { theme } from "./src/theme";
 import Button from "./src/ui/Button";
 import Badge from "./src/ui/Badge";
+import AppErrorBoundary from "./src/ui/AppErrorBoundary";
 import ConnectScreen from "./src/screens/ConnectScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import MarketsScreen from "./src/screens/MarketsScreen";
@@ -14,11 +15,35 @@ import BotScreen from "./src/screens/BotScreen";
 import HealthScreen from "./src/screens/HealthScreen";
 import LogsScreen from "./src/screens/LogsScreen";
 import ConfigScreen from "./src/screens/ConfigScreen";
+import SupportScreen from "./src/screens/SupportScreen";
 import { loadSettings, saveSettings, type MobileSettings } from "./src/lib/storage";
 import AuthScreen from "./src/screens/AuthScreen";
 import { getAppAuthStatus } from "./src/lib/appAuth";
 
-type TabKey = "dashboard" | "markets" | "trades" | "decisions" | "news" | "bot" | "health" | "logs" | "config";
+type TabKey =
+  | "dashboard"
+  | "markets"
+  | "trades"
+  | "decisions"
+  | "news"
+  | "bot"
+  | "health"
+  | "logs"
+  | "support"
+  | "config";
+
+const TAB_ITEMS: { key: TabKey; title: string; icon: string }[] = [
+  { key: "dashboard", title: "Painel", icon: "◉" },
+  { key: "markets", title: "Mercados", icon: "≈" },
+  { key: "trades", title: "Trades", icon: "⇄" },
+  { key: "decisions", title: "Decisões", icon: "◎" },
+  { key: "news", title: "Notícias", icon: "✦" },
+  { key: "bot", title: "Bot", icon: "▶" },
+  { key: "health", title: "Saúde", icon: "♥" },
+  { key: "logs", title: "Logs", icon: "≡" },
+  { key: "support", title: "Suporte", icon: "?" },
+  { key: "config", title: "Config", icon: "⚙" },
+];
 
 export default function App() {
   const [settings, setSettings] = useState<MobileSettings | null>(null);
@@ -28,7 +53,10 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
-    Promise.all([loadSettings().then((s) => setSettings(s)), getAppAuthStatus().then((s) => setAppAuthEnabled(!!s.enabled))])
+    Promise.all([
+      loadSettings().then((s) => setSettings(s)),
+      getAppAuthStatus().then((s) => setAppAuthEnabled(!!s.enabled)),
+    ])
       .catch(() => {})
       .finally(() => setLoaded(true));
   }, []);
@@ -59,6 +87,7 @@ export default function App() {
     if (tab === "bot") return <BotScreen baseUrl={baseUrl} token={token} />;
     if (tab === "health") return <HealthScreen baseUrl={baseUrl} token={token} />;
     if (tab === "logs") return <LogsScreen baseUrl={baseUrl} token={token} />;
+    if (tab === "support") return <SupportScreen baseUrl={baseUrl} token={token} />;
     return (
       <ConfigScreen
         baseUrl={baseUrl}
@@ -74,82 +103,124 @@ export default function App() {
 
   if (!loaded) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="light" />
-        <View style={styles.center}>
-          <Text style={styles.text}>Carregando…</Text>
-        </View>
-      </SafeAreaView>
+      <AppErrorBoundary>
+        <SafeAreaView style={styles.safe}>
+          <StatusBar style="light" />
+          <View style={styles.center}>
+            <Text style={styles.text}>Carregando...</Text>
+          </View>
+        </SafeAreaView>
+      </AppErrorBoundary>
     );
   }
 
   if (!connected) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="light" />
-        <ConnectScreen initial={settings} onConnected={onConnected} />
-      </SafeAreaView>
+      <AppErrorBoundary>
+        <SafeAreaView style={styles.safe}>
+          <StatusBar style="light" />
+          <ConnectScreen initial={settings} onConnected={onConnected} />
+        </SafeAreaView>
+      </AppErrorBoundary>
     );
   }
 
   if (!unlocked) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="light" />
-        <AuthScreen onAuthed={() => onAuthed().catch(() => {})} />
-      </SafeAreaView>
+      <AppErrorBoundary>
+        <SafeAreaView style={styles.safe}>
+          <StatusBar style="light" />
+          <AuthScreen onAuthed={() => onAuthed().catch(() => {})} />
+        </SafeAreaView>
+      </AppErrorBoundary>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="light" />
-      <View style={styles.top}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.brand}>HelpSystem</Text>
-          <Text style={styles.sub}>Mobile • Binance Bot</Text>
+    <AppErrorBoundary>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="light" />
+
+        <View style={styles.hero}>
+          <View style={styles.heroGlowTop} />
+          <View style={styles.heroGlowBottom} />
+          <View style={styles.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.brand}>HelpSystem</Text>
+              <Text style={styles.sub}>Mobile • Central inteligente</Text>
+            </View>
+            <Badge text={settings?.token ? "token: OK" : "token: vazio"} tone={settings?.token ? "good" : "warn"} />
+          </View>
+          <View style={styles.heroPills}>
+            <Badge text={appAuthEnabled ? "2FA local: ativo" : "2FA local: inativo"} tone={appAuthEnabled ? "good" : "warn"} />
+            <Badge text={`base: ${String(settings?.baseUrl || "-").replace(/^https?:\/\//, "")}`} />
+          </View>
         </View>
-        <Badge text={settings?.token ? "token: OK" : "token: vazio"} tone={settings?.token ? "good" : "warn"} />
-      </View>
 
-      <View style={styles.tabs}>
-        <TabButton title="Painel" active={tab === "dashboard"} onPress={() => setTab("dashboard")} />
-        <TabButton title="Mercados" active={tab === "markets"} onPress={() => setTab("markets")} />
-        <TabButton title="Trades" active={tab === "trades"} onPress={() => setTab("trades")} />
-        <TabButton title="Decisões" active={tab === "decisions"} onPress={() => setTab("decisions")} />
-        <TabButton title="Notícias" active={tab === "news"} onPress={() => setTab("news")} />
-        <TabButton title="Bot" active={tab === "bot"} onPress={() => setTab("bot")} />
-        <TabButton title="Saúde" active={tab === "health"} onPress={() => setTab("health")} />
-        <TabButton title="Logs" active={tab === "logs"} onPress={() => setTab("logs")} />
-        <TabButton title="Config" active={tab === "config"} onPress={() => setTab("config")} />
-      </View>
+        <View style={styles.tabsWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
+            {TAB_ITEMS.map((item) => {
+              const active = item.key === tab;
+              return (
+                <Button
+                  key={item.key}
+                  title={`${item.icon} ${item.title}`}
+                  variant={active ? "primary" : "secondary"}
+                  onPress={() => setTab(item.key)}
+                  style={active ? [styles.tab, styles.tabActive] : styles.tab}
+                />
+              );
+            })}
+          </ScrollView>
+        </View>
 
-      <View style={styles.body}>{content}</View>
-    </SafeAreaView>
+        <View style={styles.body}>{content}</View>
+      </SafeAreaView>
+    </AppErrorBoundary>
   );
-}
-
-function TabButton({ title, active, onPress }: { title: string; active: boolean; onPress: () => void }) {
-  return <Button title={title} onPress={onPress} variant={active ? "primary" : "secondary"} style={styles.tab} />;
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.bg },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   text: { color: theme.colors.textDim, fontSize: 14 },
-  top: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border
+  hero: {
+    marginHorizontal: 14,
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.panel,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    overflow: "hidden",
   },
-  brand: { color: theme.colors.text, fontSize: 18, fontWeight: "900" },
+  heroGlowTop: {
+    position: "absolute",
+    top: -20,
+    right: -10,
+    width: 140,
+    height: 90,
+    borderRadius: 60,
+    backgroundColor: "rgba(34,211,238,0.12)",
+  },
+  heroGlowBottom: {
+    position: "absolute",
+    bottom: -25,
+    left: -10,
+    width: 180,
+    height: 90,
+    borderRadius: 70,
+    backgroundColor: "rgba(139,92,246,0.10)",
+  },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  heroPills: { marginTop: 10, flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  brand: { color: theme.colors.text, fontSize: 22, fontWeight: "900", letterSpacing: 0.4 },
   sub: { color: theme.colors.textDim, fontSize: 12, marginTop: 2 },
-  tabs: { paddingHorizontal: 12, paddingVertical: 10, flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  tab: { flexGrow: 1 },
-  body: { flex: 1 }
+  tabsWrap: { paddingHorizontal: 12, paddingBottom: 6 },
+  tabsContent: { gap: 8, paddingHorizontal: 2 },
+  tab: { minWidth: 120 },
+  tabActive: { shadowColor: "#f0b90b", shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
+  body: { flex: 1 },
 });

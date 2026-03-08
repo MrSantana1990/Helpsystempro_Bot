@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from .config import load_settings
+from .env_flags import env_flag
 from .pnl import compute_realized_fifo, expand_executions, load_trades
 from .storage import Storage
 
@@ -79,6 +81,14 @@ def evaluate_risk_limits(storage: Storage) -> RiskDecision:
     max_daily_loss = float(s.get("risk_max_daily_loss_usdt", 0.0) or 0.0)
     max_orders_per_day = float(s.get("risk_max_orders_per_day", 0.0) or 0.0)
     max_drawdown_usdt = float(s.get("risk_max_drawdown_usdt", 0.0) or 0.0)
+    plan_max_orders = int(os.getenv("HSP_PLAN_MAX_ORDERS_PER_DAY") or "0")
+    if plan_max_orders > 0:
+        if max_orders_per_day <= 0:
+            max_orders_per_day = float(plan_max_orders)
+        else:
+            max_orders_per_day = float(min(int(max_orders_per_day), plan_max_orders))
+    if not env_flag("HSP_PLAN_RISK_ADVANCED", True):
+        max_drawdown_usdt = 0.0
 
     limits = {
         "risk_max_daily_buy_quote_usdt": max_buy_quote,
@@ -130,4 +140,3 @@ def evaluate_risk_limits(storage: Storage) -> RiskDecision:
         )
 
     return RiskDecision(ok_to_buy=True, reason="OK", stats=stats, limits=limits)
-

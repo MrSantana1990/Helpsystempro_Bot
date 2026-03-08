@@ -22,10 +22,9 @@ const styles = StyleSheet.create({
   base: {
     borderRadius: 999,
     borderWidth: 1,
-    backgroundColor: "rgba(0,0,0,0.20)",
+    backgroundColor: "rgba(15,23,42,0.8)",
     paddingHorizontal: 10,
     paddingVertical: 6
   },
-  text: { color: theme.colors.textDim, fontSize: 12, fontFamily: "monospace" }
+  text: { color: theme.colors.textDim, fontSize: 12, fontFamily: "monospace", fontWeight: "700" }
 });
-

@@ -1,11 +1,27 @@
 import React from "react";
-import { Search, RefreshCw } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
+import Badge from "./Badge.jsx";
 import Button from "./Button.jsx";
 
-export default function Topbar({ onDeposit, onRefreshAll, onPlay, onStop, botOn, version }) {
+function botStatusLabel(botOn, testnet) {
+  if (!botOn) return "BOT PARADO";
+  return testnet ? "BOT EM SIMULACAO" : "BOT EM LIVE";
+}
+
+export default function Topbar({
+  onDeposit,
+  onRefreshAll,
+  onPlay,
+  onStop,
+  botOn,
+  version,
+  testnet = true
+}) {
   const git = version?.git ? String(version.git) : "";
   const apiV = version?.api_version ? String(version.api_version) : "";
   const build = apiV || git ? `v${apiV || "?"}${git ? ` • ${git}` : ""}` : "";
+  const modeLabel = testnet ? "TESTNET" : "LIVE";
+
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl2 border border-white/10 bg-black/15 p-3 shadow-soft">
       <div className="flex min-w-0 items-center gap-3">
@@ -13,14 +29,16 @@ export default function Topbar({ onDeposit, onRefreshAll, onPlay, onStop, botOn,
         <div className="min-w-0">
           <div className="truncate text-sm font-extrabold tracking-wide">HelpSystem</div>
           {build ? <div className="truncate text-[11px] text-white/45">{build}</div> : null}
-          <div className="truncate text-xs text-white/70">Binance Bot • Painel React (local)</div>
+          <div className="truncate text-xs text-white/70">Painel operacional • governanca, inteligencia e risco</div>
         </div>
       </div>
 
       <div className="hidden items-center gap-2 md:flex">
+        <Badge tone={botOn ? "good" : "warn"}>{botStatusLabel(botOn, testnet)}</Badge>
+        <Badge tone={testnet ? "good" : "bad"}>AMBIENTE: {modeLabel}</Badge>
         <div className="flex items-center gap-2 rounded-full border border-white/12 bg-black/20 px-3 py-2">
           <Search size={16} className="opacity-80" />
-          <input className="w-72 bg-transparent text-sm outline-none placeholder:text-white/40" placeholder="Buscar..." />
+          <input className="w-64 bg-transparent text-sm outline-none placeholder:text-white/40" placeholder="Buscar..." />
         </div>
         <Button variant="primary" onClick={onDeposit}>
           Depositar
@@ -29,6 +47,7 @@ export default function Topbar({ onDeposit, onRefreshAll, onPlay, onStop, botOn,
           className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-black/20 hover:border-white/25"
           onClick={onRefreshAll}
           title="Atualizar tudo"
+          aria-label="Atualizar tudo"
         >
           <RefreshCw size={16} />
         </button>

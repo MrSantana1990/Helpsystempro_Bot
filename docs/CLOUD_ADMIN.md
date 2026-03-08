@@ -1,110 +1,102 @@
-# Cloud Admin — usuários, 2FA e planos (Fase Cloud)
+# Cloud Admin - guia operacional (VPS por cliente)
 
-Este guia explica **onde** e **como** você gerencia:
-- usuários/senhas do painel Cloud
-- 2FA obrigatório (Google Authenticator / TOTP)
-- clientes (tenants) e plano por cliente
+Este guia cobre o painel administrativo em `http://localhost:8801`.
 
-> Aviso: não é recomendação financeira. Não há garantia de lucro.
+> Aviso: nao e recomendacao financeira e nao ha garantia de lucro.
 
----
+## Rotas principais
+- `http://localhost:8801/login`
+- `http://localhost:8801/onboarding/bootstrap`
+- `http://localhost:8801/onboarding/2fa`
+- `http://localhost:8801/console`
 
-## 1) Onde fica o “painel central”
-- Backend (API Cloud): `cloud/api/`
-- Banco (Postgres via Docker): `cloud/compose/`
-- Painel Admin (web): `cloud/admin/`
+## Fluxo de acesso (master)
+1. Bootstrap interno (`/onboarding/bootstrap`) no primeiro uso.
+2. Ativar 2FA (`/onboarding/2fa`) com Google Authenticator.
+3. Login (`/login`) com email + senha + codigo TOTP.
 
-O Admin é o lugar onde você cria usuários, cria tenants (clientes) e vincula usuários aos tenants.
+## Fluxo comercial (cadastro -> aprovacao -> pagamento -> liberacao)
+1. Cliente solicita cadastro no portal `http://localhost:8501` em **Solicitar cadastro**.
+2. Pedido fica pendente em `Console > Solicitacoes`.
+3. Master define plano/ciclo e confirma pagamento inicial.
+4. Master aprova o cadastro.
+5. Sistema cria automaticamente:
+   - usuario
+   - tenant (cliente)
+   - vinculo usuario->tenant
+   - assinatura
+   - licenca
+6. Cliente entra no portal com o mesmo email/senha e conclui 2FA no primeiro acesso.
 
----
+## Billing automatico (PIX + webhook)
 
-## 2) Rodar local (Cloud)
+### Tabelas novas
+- `invoices`
+- `payment_webhooks`
 
-### 2.1 Subir Postgres + API
-```powershell
-cd D:\DEV\Helpsystempro_Bot\cloud\compose
-Copy-Item .env.example .env -Force
-docker compose up -d --build
-```
+### Endpoints admin
+- `POST /api/admin/billing/invoices` (gera cobranca PIX)
+- `GET /api/admin/billing/invoices`
+- `POST /api/admin/billing/invoices/:id/cancel`
 
-Health:
-- `http://localhost:8802/health`
+### Endpoint webhook publico
+- `POST /api/billing/webhook/:provider`
+- Idempotencia por `provider + event_id` (tabela `payment_webhooks`).
 
-### 2.2 Subir o Admin (web)
-```powershell
-cd D:\DEV\Helpsystempro_Bot\cloud\admin
-npm install
-npm run dev
-```
+### Regras automaticas
+- `invoice paid` => `subscription active`
+- `invoice overdue` + prazo de graca => `subscription suspended`
+- `subscription suspended` => bloqueio de LIVE no portal operacional
 
-Admin:
-- `http://localhost:8801`
+## Providers de pagamento
+- Producao: `mercado_pago` (PIX real)
+- Local/teste: `mock_pix` (gera copia-e-cola/QR de teste e aceita webhook simulado)
 
----
+Variaveis relevantes no `cloud-api`:
+- `HSP_BILLING_PROVIDER`
+- `HSP_BILLING_GRACE_DAYS`
+- `HSP_MP_ACCESS_TOKEN`
+- `HSP_MP_WEBHOOK_SECRET`
+- `HSP_MP_NOTIFICATION_URL`
 
-## 3) Criar o primeiro admin (bootstrap)
+## UI de Cobranca (Console > Cobranca)
+- Status real por fatura (`pendente`, `pago`, `vencido`, `suspenso`, `cancelado`, `falhou`)
+- Botao **Gerar PIX**
+- Copia e cola do PIX
+- QR code
+- Historico de webhooks
 
-No `.env` de `cloud/compose/`, defina um código forte:
-- `HSP_BOOTSTRAP_CODE=...` (mínimo 8 chars)
+## Observabilidade 24/7
 
-No Admin (`http://localhost:8801`):
-1) Informe `bootstrapCode + email + senha`
-2) Clique em **Bootstrap admin**
+### Endpoints
+- Cloud API: `GET /api/metrics` (Prometheus)
+- Bot API: `GET /api/metrics`
+- Bot API: `GET /api/ops/health` (api, db, exchange, worker, license, subscription)
 
-Depois do primeiro admin criado, o bootstrap é bloqueado automaticamente.
+### Metricas minimas
+- `bot_orders_total`
+- `bot_risk_blocks_total`
+- `bot_errors_total`
+- `bot_cycle_duration_seconds`
+- `api_request_duration_seconds`
 
----
+### Alertas Telegram automaticos
+- bot parado
+- limite de risco atingido
+- falha de exchange/API
+- assinatura suspensa
 
-## 4) 2FA obrigatório (Google Authenticator)
+## Seguranca
+- 2FA obrigatorio no admin.
+- Mensagens de erro amigaveis no UI/API.
+- Logs estruturados JSON com `request_id` e `tenant_id` no cloud API e bot API.
+- Chaves Binance sempre sem permissao de saque.
 
-No Admin:
-1) Clique em **Gerar QR (2FA)**
-2) Escaneie o QR no Google Authenticator (ou app TOTP)
-3) Digite o código de 6 dígitos e clique em **Habilitar 2FA**
-
-Sem 2FA habilitado, o login retorna erro (2FA é obrigatório).
-
----
-
-## 5) Login e gerenciamento (usuários / tenants / planos)
-
-Depois do 2FA:
-1) Faça login com `email + senha + TOTP`
-2) Vá nas seções:
-   - **Usuários**: cria usuários (`role=user/admin`)
-   - **Tenants (clientes)**: cria clientes e define `plan` (starter/pro/premium)
-   - **Vincular usuário → tenant**: dá acesso do usuário ao cliente
-
-Observação:
-- O campo `plan` existe para **limitar recursos por plano** (enforcement). A governança de plano é a próxima etapa do backend (limites por tenant).
-
----
-
-## 6) Onde ficam “usuário e senha”
-
-### No Cloud
-- Usuários e senhas ficam no **Postgres** (tabela `users`), com senha **hash** (não reversível).
-- O 2FA fica ligado por usuário (`totp_enabled` + segredo criptografado).
-
-### No Local-first (painel local)
-- Não há cadastro de usuário: o acesso é por **token local** (`HSP_PORTAL_TOKEN`) e por padrão a API só aceita `127.0.0.1`.
-
----
-
-## 7) Variáveis importantes (Cloud)
-No arquivo `cloud/compose/.env`:
-- `DATABASE_URL=...`
-- `JWT_SECRET=...` (forte, 32+ chars)
-- `HSP_ENCRYPTION_KEY_BASE64=...` (32 bytes em base64, AES-256-GCM)
-- `HSP_BOOTSTRAP_CODE=...`
-- `PORT=8802` (opcional)
-
----
-
-## 8) Segurança mínima recomendada (produção)
-- Rodar atrás de HTTPS (reverse proxy) e firewall
-- 2FA obrigatório (já implementado)
-- Rate limit / lockout (recomendado como hardening)
-- Nunca permitir chaves Binance com `withdraw`
-- Auditoria (logs) e exportação (CSV)
-
+## Suporte interno (web + mobile)
+- Portal operacional (`8501`): menu `Sistema > Suporte`
+- App mobile: aba `Suporte`
+- API:
+  - `GET /api/support/sectors`
+  - `POST /api/support/tickets`
+  - `GET /api/support/tickets`
+- Persistencia: `data/support_tickets.jsonl`

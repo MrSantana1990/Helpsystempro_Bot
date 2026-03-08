@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import Card from "../components/Card.jsx";
 import Badge from "../components/Badge.jsx";
 import Button from "../components/Button.jsx";
@@ -8,10 +8,14 @@ import { fmtNumber, fmtPct, fmtPrice } from "../lib/format.js";
 
 export default function Overview({ token, botOn }) {
   const [ov, setOv] = useState(null);
+  const [risk, setRisk] = useState(null);
+  const [eventsStats, setEventsStats] = useState(null);
   const [tickers, setTickers] = useState([]);
   const [fx, setFx] = useState(null);
   const [mini, setMini] = useState([]);
   const [news, setNews] = useState(null);
+  const [eventsFeed, setEventsFeed] = useState([]);
+  const [latestDecision, setLatestDecision] = useState(null);
   const [acct, setAcct] = useState(null);
   const [pfValued, setPfValued] = useState(null);
   const [reg, setReg] = useState(null);
@@ -26,7 +30,7 @@ export default function Overview({ token, botOn }) {
 
   const refresh = async (sym = marketSymbol) => {
     setErr("");
-    const [ovv, fxr, tkr, kln, acctR, pfR, pfvR, regR] = await Promise.all([
+    const [ovv, fxr, tkr, kln, acctR, pfR, pfvR, regR, riskR, eventsR, decisionsR, eventsRecentR] = await Promise.all([
       apiGet("/api/overview", { token }),
       apiGet("/api/market/usdtbrl", { token }),
       apiGet("/api/market/tickers?symbols=" + encodeURIComponent("BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT"), { token }),
@@ -34,13 +38,21 @@ export default function Overview({ token, botOn }) {
       apiGet("/api/account/summary", { token }).catch(() => null),
       apiGet("/api/portfolio", { token }).catch(() => ({ rows: [] })),
       apiGet("/api/portfolio/valued", { token }).catch(() => null),
-      apiGet("/api/symbols/registry", { token }).catch(() => null)
+      apiGet("/api/symbols/registry", { token }).catch(() => null),
+      apiGet("/api/risk/daily", { token }).catch(() => null),
+      apiGet("/api/events/stats", { token }).catch(() => null),
+      apiGet("/api/decisions?limit=1", { token }).catch(() => ({ rows: [] })),
+      apiGet("/api/events/recent?limit=5", { token }).catch(() => ({ rows: [] }))
     ]);
     setOv(ovv);
     setFx(fxr);
     setTickers(tkr.rows || []);
     setMini(kln.closes || []);
     setAcct(acctR);
+    setRisk(riskR);
+    setEventsStats(eventsR);
+    setLatestDecision((decisionsR?.rows || [])[0] || null);
+    setEventsFeed(eventsRecentR?.rows || []);
     setPortfolio((pfR && pfR.rows) || []);
     setPfValued(pfvR);
     setReg(regR);
@@ -138,6 +150,49 @@ export default function Overview({ token, botOn }) {
     return arr.slice(0, 30);
   }, [acct?.enabled, acct?.rows, ov?.symbols, portfolio]);
 
+  const kpis = useMemo(() => {
+    const pnl = Number(risk?.stats?.realized_pnl_usdt || 0);
+    const orders = Number(risk?.stats?.orders_count || 0);
+    const exposures = Number(ov?.counts?.open_positions || 0);
+    const decisions = Number(ov?.counts?.decisions || 0);
+    const dailyBuy = Number(risk?.stats?.buy_quote_usdt || 0);
+    const limitBuy = Number(risk?.limits?.risk_max_daily_buy_quote_usdt || 0);
+    const usage = limitBuy > 0 ? (dailyBuy / limitBuy) * 100 : 0;
+    return { pnl, orders, exposures, decisions, usage };
+  }, [ov?.counts?.decisions, ov?.counts?.open_positions, risk?.limits?.risk_max_daily_buy_quote_usdt, risk?.stats?.buy_quote_usdt, risk?.stats?.orders_count, risk?.stats?.realized_pnl_usdt]);
+
+  const alerts = useMemo(() => {
+    const items = [];
+    if (!ov?.testnet) items.push("Modo LIVE ativo: valide limites, licença e termo aceito.");
+    if (kpis.usage >= 80) items.push(`Risco diário em ${fmtNumber(kpis.usage, 0)}% do limite de compras.`);
+    if (Number(risk?.stats?.drawdown_usdt_est || 0) > 0) items.push(`Drawdown estimado hoje: ${fmtNumber(risk?.stats?.drawdown_usdt_est, 2)} USDT.`);
+    if ((reg?.pending || []).length > 0) items.push(`Há ${(reg?.pending || []).length} moedas pendentes para aprovação.`);
+    if (!acct?.enabled) items.push("Conta Binance não conectada: painel em modo manual/simulação.");
+    return items;
+  }, [acct?.enabled, kpis.usage, ov?.testnet, reg?.pending, risk?.stats?.drawdown_usdt_est]);
+
+  const decisionDetails = useMemo(() => {
+    const raw = latestDecision?.details_json;
+    if (!raw) return {};
+    if (typeof raw === "object") return raw;
+    try {
+      return JSON.parse(String(raw));
+    } catch {
+      return {};
+    }
+  }, [latestDecision]);
+
+  const intelligenceScores = useMemo(() => {
+    const clamp = (value) => Math.max(0, Math.min(100, Number(value) || 0));
+    const technical = clamp(((Number(latestDecision?.score || 0) + 1) / 2) * 100);
+    const sentiment = clamp(((Number(latestDecision?.sentiment || 0) + 1) / 2) * 100);
+    const confidence = clamp(Number(latestDecision?.confidence || 0) * 100);
+    const eventsCount = Number(eventsStats?.in_memory || 0);
+    const criticalEvents = Number(eventsStats?.by_severity?.critical || 0);
+    const eventImpact = clamp(eventsCount <= 0 ? 0 : ((eventsCount - criticalEvents) / Math.max(eventsCount, 1)) * 100);
+    return { technical, sentiment, confidence, eventImpact, criticalEvents };
+  }, [eventsStats?.by_severity?.critical, eventsStats?.in_memory, latestDecision?.confidence, latestDecision?.score, latestDecision?.sentiment]);
+
   return (
     <div className="flex flex-col gap-3">
       {err ? <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm">{err}</div> : null}
@@ -147,11 +202,13 @@ export default function Overview({ token, botOn }) {
         right={
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={ov?.testnet ? "good" : "warn"}>ambiente: {ov?.testnet ? "TESTNET" : "REAL"}</Badge>
+            <Badge tone={ov?.testnet ? "good" : "bad"}>modo: {ov?.testnet ? "simulação" : "live"}</Badge>
             <Badge>ordens: {ov?.counts?.trades ?? "-"}</Badge>
             <Badge>decisões: {ov?.counts?.decisions ?? "-"}</Badge>
             <Badge>abertas: {ov?.counts?.open_positions ?? "-"}</Badge>
             <Badge tone={(reg?.pending || []).length ? "warn" : "neutral"}>pendentes: {(reg?.pending || []).length ?? "-"}</Badge>
-            <Badge tone={botOn ? "good" : "neutral"}>bot: {botOn ? "LIGADO" : "DESLIGADO"}</Badge>
+            <Badge tone={botOn ? "good" : "warn"}>bot: {botOn ? "LIGADO" : "DESLIGADO"}</Badge>
+            <Badge tone={eventsStats?.in_memory ? "good" : "neutral"}>eventos: {eventsStats?.in_memory ?? "-"}</Badge>
           </div>
         }
       >
@@ -162,6 +219,110 @@ export default function Overview({ token, botOn }) {
           <div>
             Monitoradas: <span className="font-mono text-white/80">{(ov?.symbols || []).join(", ") || "-"}</span>
           </div>
+          {ov?.intelligence?.regime ? (
+            <div>
+              Regime: <span className="font-mono text-white/80">{ov.intelligence.regime}</span>
+            </div>
+          ) : null}
+          {ov?.intelligence?.position_size_multiplier ? (
+            <div>
+              Sizing: <span className="font-mono text-white/80">{fmtNumber(ov.intelligence.position_size_multiplier, 2)}x</span>
+            </div>
+          ) : null}
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <Card className="p-0" title={null}>
+          <div className="text-xs text-white/60">PnL hoje (realizado)</div>
+          <div className={`mt-1 text-2xl font-black ${kpis.pnl >= 0 ? "text-good" : "text-bad"}`}>{fmtNumber(kpis.pnl, 2)} USDT</div>
+        </Card>
+        <Card className="p-0" title={null}>
+          <div className="text-xs text-white/60">Trades hoje</div>
+          <div className="mt-1 text-2xl font-black">{fmtNumber(kpis.orders, 0)}</div>
+        </Card>
+        <Card className="p-0" title={null}>
+          <div className="text-xs text-white/60">Posições abertas</div>
+          <div className="mt-1 text-2xl font-black">{fmtNumber(kpis.exposures, 0)}</div>
+        </Card>
+        <Card className="p-0" title={null}>
+          <div className="text-xs text-white/60">Decisões registradas</div>
+          <div className="mt-1 text-2xl font-black">{fmtNumber(kpis.decisions, 0)}</div>
+        </Card>
+        <Card className="p-0" title={null}>
+          <div className="text-xs text-white/60">Risco usado (buy/dia)</div>
+          <div className={`mt-1 text-2xl font-black ${kpis.usage >= 80 ? "text-yellow-300" : "text-white"}`}>{fmtNumber(kpis.usage, 0)}%</div>
+        </Card>
+      </div>
+
+      <Card
+        title="Central de Inteligência do Sistema"
+        right={
+          <div className="flex flex-wrap gap-2">
+            <Badge tone={botOn ? "good" : "warn"}>{botOn ? "motor: online" : "motor: parado"}</Badge>
+            <Badge tone={ov?.testnet ? "good" : "warn"}>{ov?.testnet ? "modo seguro" : "modo live"}</Badge>
+            <Badge tone={intelligenceScores.criticalEvents > 0 ? "warn" : "neutral"}>
+              eventos críticos: {intelligenceScores.criticalEvents}
+            </Badge>
+            <Badge>regime: {ov?.intelligence?.regime || "indefinido"}</Badge>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_1fr]">
+          <div className="grid gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/5 p-3">
+            <ScoreBar label="Score técnico" value={intelligenceScores.technical} />
+            <ScoreBar label="Score de sentimento" value={intelligenceScores.sentiment} />
+            <ScoreBar label="Score de eventos" value={intelligenceScores.eventImpact} />
+            <ScoreBar label="Confiança do modelo" value={intelligenceScores.confidence} />
+            <div className="mt-1 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/70">
+              <div className="font-semibold text-white/90">
+                Última decisão: {latestDecision?.symbol || "-"} • {latestDecision?.action || "-"}
+              </div>
+              <div className="mt-1">
+                {decisionDetails?.explain?.[0] ||
+                  decisionDetails?.why ||
+                  "Sem explicação textual registrada para a última decisão."}
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+            <div className="mb-2 text-sm font-extrabold">Feed de inteligência</div>
+            {!eventsFeed.length ? (
+              <div className="text-xs text-white/60">Sem eventos recentes. O motor continua monitorando mercado e risco.</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {eventsFeed.map((event, idx) => (
+                  <div key={`${event.ts_utc || "e"}-${idx}`} className="rounded-xl border border-white/10 bg-black/25 p-2">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-mono text-white/80">{event.event_type || "evento"}</span>
+                      <span className="text-white/50">{String(event.ts_utc || "").slice(11, 19) || "-"}</span>
+                    </div>
+                    <div className="mt-1 text-xs text-white/60">
+                      severidade: <span className="font-semibold">{event.severity || "info"}</span>
+                      {event.symbol ? ` • símbolo: ${event.symbol}` : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Alertas e pendências">
+        {!alerts.length ? (
+          <div className="text-sm text-white/60">Sem alertas críticos no momento.</div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {alerts.map((alert, idx) => (
+              <div key={idx} className="rounded-xl border border-yellow-500/25 bg-yellow-500/10 p-3 text-sm">
+                ⚠ {alert}
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="mt-2 text-xs text-white/60">
+          Dica: se você está começando agora, abra a aba <span className="font-semibold">Primeiro Uso</span> no menu lateral.
         </div>
       </Card>
 
@@ -181,7 +342,7 @@ export default function Overview({ token, botOn }) {
           ) : pfValued?.enabled ? (
             <div className="mb-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-sm text-white/80">
               Carteira manual valorizada: <span className="font-mono font-extrabold">{fmtNumber(pfTotalUsdt, 4)} USDT</span>
-              {pfTotalBrl != null ? <span className="text-white/60"> (â‰ˆ {fmtNumber(pfTotalBrl, 2)} R$)</span> : null}
+              {pfTotalBrl != null ? <span className="text-white/60"> (≈ {fmtNumber(pfTotalBrl, 2)} R$)</span> : null}
               <div className="mt-1 text-xs text-white/60">{pfValued.note}</div>
               {Number(pfValued.unvalued_count || 0) > 0 ? (
                 <div className="mt-2 text-xs text-white/60">Observação: {pfValued.unvalued_count} ativo(s) sem par direto USDT.</div>
@@ -403,9 +564,29 @@ export default function Overview({ token, botOn }) {
           </div>
         )}
         <div className="mt-3 text-xs text-white/60">
-          Sem promessa de lucro: “confidence” é um nível interno do sinal, não é probabilidade de ganho.
+          Sem promessa de lucro: "confidence" é um nível interno do sinal, não é probabilidade de ganho.
         </div>
       </Card>
     </div>
   );
 }
+
+function ScoreBar({ label, value }) {
+  const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
+  const toneClass = safeValue >= 70 ? "from-emerald-400 to-emerald-500" : safeValue >= 45 ? "from-yellow-300 to-amber-400" : "from-rose-400 to-rose-500";
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs text-white/70">
+        <span>{label}</span>
+        <span className="font-mono">{fmtNumber(safeValue, 0)}%</span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full border border-white/10 bg-black/40">
+        <div className={`h-full bg-gradient-to-r ${toneClass}`} style={{ width: `${safeValue}%` }} />
+      </div>
+    </div>
+  );
+}
+
+
+
+

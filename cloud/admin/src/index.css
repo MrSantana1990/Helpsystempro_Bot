@@ -11,20 +11,32 @@ body,
 body {
   margin: 0;
   font-family:
-    "Segoe UI",
     "Inter",
+    "Segoe UI",
     -apple-system,
     BlinkMacSystemFont,
     "Helvetica Neue",
     Arial,
     sans-serif;
   background:
-    radial-gradient(1200px 420px at 15% -10%, rgba(240, 185, 11, 0.16), transparent 55%),
-    radial-gradient(900px 380px at 95% 0%, rgba(56, 189, 248, 0.1), transparent 58%),
-    #0b0f14;
+    radial-gradient(1200px 420px at 15% -10%, rgba(240, 185, 11, 0.14), transparent 55%),
+    radial-gradient(980px 420px at 95% -12%, rgba(99, 102, 241, 0.12), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 25%),
+    #0a0f16;
   color: rgba(255, 255, 255, 0.92);
 }
 
 * {
   box-sizing: border-box;
+}
+
+*::selection {
+  background: rgba(240, 185, 11, 0.24);
+  color: #fff;
+}
+
+input:focus,
+button:focus,
+a:focus {
+  outline: none;
 }

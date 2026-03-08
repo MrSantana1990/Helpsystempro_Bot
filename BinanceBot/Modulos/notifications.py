@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from collections import deque
 
@@ -22,6 +23,8 @@ def _rate_limit_ok(now: float, per_minute: int) -> bool:
 
 
 async def enviar_alerta(mensagem: str, tipo: str = "INFO") -> None:
+    if str(os.getenv("HSP_PLAN_TELEGRAM_ALERTS", "1")).strip() in {"0", "false", "False"}:
+        return
     settings = load_settings()
     per_minute = int(settings.get("limite_notificacoes_por_minuto", 10))
     now = time.time()
@@ -83,4 +86,3 @@ async def alerta_pnl(pnl_usdt: float, pnl_percent: float) -> None:
 async def sleep_no_block(seconds: float) -> None:
     # utilitário para substituir time.sleep em fluxos async
     await asyncio.sleep(seconds)
-

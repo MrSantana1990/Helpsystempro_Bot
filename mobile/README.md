@@ -1,42 +1,44 @@
-# HelpSystem • Binance Bot — Mobile (React Native / Expo)
+# HelpSystem Mobile (Expo)
 
-App mobile (Android/iOS) no mesmo código, para operar/monitorar o **HelpSystem • Binance Bot**.
+App mobile Android/iOS para operação e monitoramento do HelpSystem.
 
-> Aviso: não é recomendação financeira e não há garantia de lucro. Use dry-run/testnet e limites de risco.
+## Recursos atuais
+- Painel mobile com visual premium (dark fintech)
+- Tabs de operação (Painel, Mercados, Trades, Decisões, Bot, Saúde, Logs, Config)
+- Aba **Suporte** com abertura de chamado por setor/prioridade
+- Login local no aparelho + token/API configurável por QR Code
 
 ## Pré-requisitos
-- Node.js 18+ (recomendado 20)
-- Expo Go instalado no celular (Android/iOS)
+- Node.js 20+
+- Expo Go atualizado
+- Backend do bot rodando
 
-## Rodar o backend em modo LAN (para o celular enxergar)
-No PC (Windows / PowerShell), no root do repo:
+## Rodar backend em LAN
+
+No root do projeto:
 
 ```powershell
-cd D:\DEV\Helpsystempro_Bot; .\run_local.ps1 -Lan
+cd D:\DEV\Helpsystempro_Bot
+.\run_local.ps1 -Lan
 ```
 
-O console vai mostrar um token no formato `lan-...`.
-No celular, use:
+Use no app:
 - Base URL: `http://IP_DO_PC:8502`
-- Token: o `lan-...`
+- Token: `lan-...` gerado no terminal
 
-## Rodar o app
+## Rodar app
+
 ```powershell
 cd D:\DEV\Helpsystempro_Bot\mobile
 npm install
 npm run start
 ```
 
-Depois:
-- Leia o QR Code com o Expo Go
-- ou selecione `a` (Android) no terminal para abrir no emulador
+Depois escaneie o QR no Expo Go.
 
-## Se aparecer “Project is incompatible with this version of Expo Go”
-Isso acontece quando o projeto usa um **Expo SDK mais novo** do que o Expo Go da Play Store/App Store suporta naquele momento.
+## Erro de versão Expo Go
 
-Este repo usa **Expo SDK 54** para compatibilidade com o Expo Go atual.
-
-Se você já tinha instalado dependências antes (ou trocou de SDK), faça um reset:
+Se aparecer incompatibilidade:
 
 ```powershell
 cd D:\DEV\Helpsystempro_Bot\mobile
@@ -46,13 +48,11 @@ npm install
 npx expo start
 ```
 
-Se ainda assim falhar, use `npx expo start --tunnel` (evita problemas de rede/LAN) ou crie um **Development Build** (sem Expo Go).
+## Endpoints usados no suporte
+- `GET /api/support/sectors`
+- `POST /api/support/tickets`
+- `GET /api/support/tickets?mine=true`
 
-## Produção (VPS)
-Para produção, aponte a Base URL para o domínio HTTPS (VPS):
-- `https://bot.seudominio.com`
+## Compliance
 
-Recomendado:
-- Binance API Key sem withdraw
-- IP whitelist da VPS
-- Token forte + auth habilitado
+Não é recomendação financeira e não há garantia de lucro.
