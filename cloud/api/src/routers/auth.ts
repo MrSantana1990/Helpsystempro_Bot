@@ -13,7 +13,7 @@ import { publicProcedure, router, authedProcedure, zEmail } from "../trpc.js";
 async function anyUserExists(): Promise<boolean> {
   const p = pool();
   const r = await p.query("SELECT 1 FROM users LIMIT 1");
-  return r.rowCount > 0;
+  return (r.rowCount || 0) > 0;
 }
 
 async function getUserByEmail(email: string) {
@@ -69,7 +69,7 @@ export const authRouter = router({
       }
 
       const secretEnc = String(u.totp_secret_enc || "");
-      if (!secretEnc) throw new TRPCError({ code: "FAILED_PRECONDITION", message: "2FA inconsistente (secret ausente)." });
+      if (!secretEnc) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "2FA inconsistente (secret ausente)." });
       const secret = decryptText(secretEnc);
       if (!input.totp || !totpVerify(secret, input.totp)) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "TOTP inválido." });
@@ -89,7 +89,7 @@ export const authRouter = router({
       if (!u) throw new TRPCError({ code: "UNAUTHORIZED", message: "Credenciais inválidas." });
       const ok = await verifyPassword(String(input.password), String(u.password_hash));
       if (!ok) throw new TRPCError({ code: "UNAUTHORIZED", message: "Credenciais inválidas." });
-      if (u.totp_enabled) throw new TRPCError({ code: "FAILED_PRECONDITION", message: "2FA já está ativo." });
+      if (u.totp_enabled) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "2FA já está ativo." });
 
       const { secret } = generateTotpSecret();
       const issuer = "HelpSystem Pro";
@@ -109,7 +109,7 @@ export const authRouter = router({
       const ok = await verifyPassword(String(input.password), String(u.password_hash));
       if (!ok) throw new TRPCError({ code: "UNAUTHORIZED", message: "Credenciais inválidas." });
       if (u.totp_enabled) return { ok: true };
-      if (!u.totp_secret_enc) throw new TRPCError({ code: "FAILED_PRECONDITION", message: "Faça o setup primeiro." });
+      if (!u.totp_secret_enc) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Faça o setup primeiro." });
       const secret = decryptText(String(u.totp_secret_enc));
       if (!totpVerify(secret, input.code)) throw new TRPCError({ code: "UNAUTHORIZED", message: "Código inválido." });
       await p.query("UPDATE users SET totp_enabled=TRUE WHERE id=$1", [String(u.id)]);
@@ -120,7 +120,7 @@ export const authRouter = router({
     const p = pool();
     const u = await p.query("SELECT totp_enabled FROM users WHERE id=$1", [ctx.user!.id]);
     if (!u.rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Usuário não encontrado." });
-    if (u.rows[0].totp_enabled) throw new TRPCError({ code: "FAILED_PRECONDITION", message: "2FA já está ativo." });
+    if (u.rows[0].totp_enabled) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "2FA já está ativo." });
 
     const { secret } = generateTotpSecret();
     const issuer = "HelpSystem Pro";
@@ -141,7 +141,7 @@ export const authRouter = router({
       const u = r.rows[0];
       if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "Usuário não encontrado." });
       if (u.totp_enabled) return { ok: true };
-      if (!u.totp_secret_enc) throw new TRPCError({ code: "FAILED_PRECONDITION", message: "Faça o setup primeiro." });
+      if (!u.totp_secret_enc) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Faça o setup primeiro." });
       const secret = decryptText(String(u.totp_secret_enc));
       if (!totpVerify(secret, input.code)) throw new TRPCError({ code: "UNAUTHORIZED", message: "Código inválido." });
       await p.query("UPDATE users SET totp_enabled=TRUE WHERE id=$1", [ctx.user!.id]);
@@ -156,3 +156,4 @@ export const authRouter = router({
     return { user: u, tenantIds: ctx.user!.tenantIds };
   })
 });
+

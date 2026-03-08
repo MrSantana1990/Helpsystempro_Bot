@@ -59,12 +59,53 @@ function requireAdmin(req: express.Request, res: express.Response) {
   return u;
 }
 
+function normEmail(v: unknown): string {
+  return String(v || "").trim().toLowerCase();
+}
+
+function masterEmail(): string {
+  return normEmail(process.env.HSP_MASTER_EMAIL || "");
+}
+
+function maskEmail(email: string): string {
+  const e = normEmail(email);
+  const at = e.indexOf("@");
+  if (at <= 1) return e;
+  return `${e.slice(0, 2)}***${e.slice(at)}`;
+}
+
+async function requireMasterAdmin(req: express.Request, res: express.Response) {
+  const u = requireAdmin(req, res);
+  const master = masterEmail();
+  if (!master) return u;
+  const p = pool();
+  const r = await p.query("SELECT email FROM users WHERE id=$1 LIMIT 1", [u.id]);
+  const email = normEmail(r.rows?.[0]?.email);
+  if (!email || email !== master) {
+    res.status(403).json({ error: "Apenas master pode gerenciar este painel." });
+    throw new Error("forbidden-master");
+  }
+  return u;
+}
+
+app.get("/api/public/config", (_req, res) => {
+  const m = masterEmail();
+  return res.json({
+    ok: true,
+    masterMode: !!m,
+    masterEmailHint: m ? maskEmail(m) : "",
+    masterEmail: m || ""
+  });
+});
+
 // REST (MVP) — facilita admin/mobile sem client tRPC.
 app.post("/api/bootstrap-admin", async (req, res) => {
   try {
     const { bootstrapCode, email, password } = req.body || {};
     if (String(bootstrapCode || "") !== env.HSP_BOOTSTRAP_CODE) return res.status(403).json({ error: "Código inválido." });
     if (!String(email || "").includes("@") || String(password || "").length < 8) return res.status(400).json({ error: "Dados inválidos." });
+    const m = masterEmail();
+    if (m && normEmail(email) !== m) return res.status(403).json({ error: "Email diferente do master configurado no servidor." });
     const p = pool();
     const any = await p.query("SELECT 1 FROM users LIMIT 1");
     if (any.rowCount && any.rowCount > 0) return res.status(403).json({ error: "Bootstrap já concluído." });
@@ -132,6 +173,10 @@ app.post("/api/login", async (req, res) => {
     if (!ok) return res.status(401).json({ error: "Credenciais inválidas." });
     if (!u.totp_enabled) return res.status(428).json({ error: "2FA obrigatório. Faça o setup." });
     if (!u.totp_secret_enc) return res.status(428).json({ error: "2FA inconsistente. Refaça o setup." });
+    const m = masterEmail();
+    if (m && String(u.role || "") === "admin" && normEmail(u.email) !== m) {
+      return res.status(403).json({ error: "Conta admin reservada ao master." });
+    }
     const secret = decryptText(String(u.totp_secret_enc));
     if (!totpVerify(secret, String(totp || ""))) return res.status(401).json({ error: "TOTP inválido." });
     const tenantIdsR = await p.query("SELECT tenant_id FROM user_tenants WHERE user_id=$1", [String(u.id)]);
@@ -156,7 +201,7 @@ app.get("/api/me", async (req, res) => {
 
 app.get("/api/admin/users", async (req, res) => {
   try {
-    requireAdmin(req, res);
+    await requireMasterAdmin(req, res);
     const p = pool();
     const r = await p.query("SELECT id,email,role,totp_enabled,created_at FROM users ORDER BY created_at DESC LIMIT 500");
     return res.json({ ok: true, rows: r.rows });
@@ -167,9 +212,12 @@ app.get("/api/admin/users", async (req, res) => {
 
 app.post("/api/admin/users", async (req, res) => {
   try {
-    requireAdmin(req, res);
+    await requireMasterAdmin(req, res);
     const { email, password, role } = req.body || {};
     if (!String(email || "").includes("@") || String(password || "").length < 8) return res.status(400).json({ error: "Dados inválidos." });
+    const m = masterEmail();
+    const roleWanted = String(role || "user") === "admin" ? "admin" : "user";
+    if (m && roleWanted === "admin") return res.status(403).json({ error: "Apenas o master pode ser admin." });
     const p = pool();
     const userId = id("usr");
     const pw = await hashPassword(String(password));
@@ -177,7 +225,7 @@ app.post("/api/admin/users", async (req, res) => {
       userId,
       String(email).toLowerCase(),
       pw,
-      String(role || "user") === "admin" ? "admin" : "user"
+      roleWanted
     ]);
     return res.json({ ok: true, userId });
   } catch {
@@ -187,7 +235,7 @@ app.post("/api/admin/users", async (req, res) => {
 
 app.get("/api/admin/tenants", async (req, res) => {
   try {
-    requireAdmin(req, res);
+    await requireMasterAdmin(req, res);
     const p = pool();
     const r = await p.query("SELECT id,name,plan,status,created_at FROM tenants ORDER BY created_at DESC LIMIT 500");
     return res.json({ ok: true, rows: r.rows });
@@ -198,7 +246,7 @@ app.get("/api/admin/tenants", async (req, res) => {
 
 app.post("/api/admin/tenants", async (req, res) => {
   try {
-    requireAdmin(req, res);
+    await requireMasterAdmin(req, res);
     const { name, plan } = req.body || {};
     if (String(name || "").trim().length < 2) return res.status(400).json({ error: "Nome inválido." });
     const p = pool();
@@ -210,9 +258,27 @@ app.post("/api/admin/tenants", async (req, res) => {
   }
 });
 
+app.get("/api/admin/links", async (req, res) => {
+  try {
+    await requireMasterAdmin(req, res);
+    const p = pool();
+    const r = await p.query(
+      `SELECT ut.user_id, ut.tenant_id, u.email AS user_email, t.name AS tenant_name, t.plan AS tenant_plan
+       FROM user_tenants ut
+       JOIN users u ON u.id = ut.user_id
+       JOIN tenants t ON t.id = ut.tenant_id
+       ORDER BY u.email ASC, t.name ASC
+       LIMIT 1000`
+    );
+    return res.json({ ok: true, rows: r.rows });
+  } catch {
+    return;
+  }
+});
+
 app.post("/api/admin/grant", async (req, res) => {
   try {
-    requireAdmin(req, res);
+    await requireMasterAdmin(req, res);
     const { userId, tenantId } = req.body || {};
     if (!String(userId || "") || !String(tenantId || "")) return res.status(400).json({ error: "Dados inválidos." });
     const p = pool();

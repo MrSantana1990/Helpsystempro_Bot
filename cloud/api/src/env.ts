@@ -6,6 +6,7 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(16),
   HSP_ENCRYPTION_KEY_BASE64: z.string().min(16),
   HSP_BOOTSTRAP_CODE: z.string().min(8),
+  HSP_MASTER_EMAIL: z.string().email().optional(),
   HSP_BASE_URL: z.string().optional().default("http://localhost:8802"),
   NODE_ENV: z.string().optional().default("development")
 });
@@ -20,4 +21,3 @@ export function getEnv(): Env {
   }
   return parsed.data;
 }
-
