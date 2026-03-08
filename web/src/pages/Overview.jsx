@@ -184,7 +184,7 @@ export default function Overview({ token, botOn }) {
               {pfTotalBrl != null ? <span className="text-white/60"> (â‰ˆ {fmtNumber(pfTotalBrl, 2)} R$)</span> : null}
               <div className="mt-1 text-xs text-white/60">{pfValued.note}</div>
               {Number(pfValued.unvalued_count || 0) > 0 ? (
-                <div className="mt-2 text-xs text-white/60">ObservaÃ§Ã£o: {pfValued.unvalued_count} ativo(s) sem par direto USDT.</div>
+                <div className="mt-2 text-xs text-white/60">Observação: {pfValued.unvalued_count} ativo(s) sem par direto USDT.</div>
               ) : null}
             </div>
           ) : (
@@ -310,7 +310,7 @@ export default function Overview({ token, botOn }) {
                         <div className="text-right">
                           <div className="font-mono text-sm">{fmtNumber(a.qty, a.asset === "USDT" ? 2 : 8)}</div>
                           <div className="text-xs text-white/60">
-                            {a.value_usdt != null ? `â‰ˆ ${fmtNumber(a.value_usdt, 2)} USDT` : "sem cotaÃ§Ã£o USDT"}
+                            {a.value_usdt != null ? `≈ ${fmtNumber(a.value_usdt, 2)} USDT` : "sem cotação USDT"}
                           </div>
                         </div>
                       </div>

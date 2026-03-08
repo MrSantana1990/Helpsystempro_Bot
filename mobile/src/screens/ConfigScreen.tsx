@@ -6,16 +6,19 @@ import Field from "../ui/Field";
 import QrScanModal from "../ui/QrScanModal";
 import { theme } from "../theme";
 import { clearSettings, saveSettings } from "../lib/storage";
+import { clearAppCredentials, getAppAuthStatus } from "../lib/appAuth";
 import { parseConnectQr } from "../lib/qr";
 
 export default function ConfigScreen({
   baseUrl,
   token,
-  onChange
+  onChange,
+  onLock
 }: {
   baseUrl: string;
   token: string;
   onChange: (next: { baseUrl: string; token: string }) => void;
+  onLock?: () => void;
 }) {
   const [b, setB] = useState(baseUrl);
   const [t, setT] = useState(token);
@@ -71,6 +74,33 @@ export default function ConfigScreen({
         </Text>
         <View style={{ height: 10 }} />
         <Button title="Abrir portfólio" variant="secondary" onPress={() => Linking.openURL("https://helpsystempro.netlify.app/").catch(() => {})} />
+      </Card>
+
+      <Card title="Segurança do app (login)">
+        <Text style={styles.p}>
+          Este app exige usuário e senha local (offline) para abrir. Isso é separado do token da API e não cria multiusuário na nuvem.
+        </Text>
+        <View style={{ height: 10 }} />
+        <Button
+          title="Redefinir usuário/senha"
+          variant="secondary"
+          onPress={() => {
+            Alert.alert("Redefinir login", "Isso vai apagar o usuário/senha deste aparelho e voltar para a tela de login.", [
+              { text: "Cancelar", style: "cancel" },
+              {
+                text: "Redefinir",
+                style: "destructive",
+                onPress: async () => {
+                  await clearAppCredentials().catch(() => {});
+                  const st = await getAppAuthStatus().catch(() => ({ enabled: false, user: "" }));
+                  if (!st.enabled) onLock?.();
+                }
+              }
+            ]);
+          }}
+        />
+        <View style={{ height: 10 }} />
+        <Button title="Bloquear agora" variant="danger" onPress={() => onLock?.()} />
       </Card>
 
       <QrScanModal

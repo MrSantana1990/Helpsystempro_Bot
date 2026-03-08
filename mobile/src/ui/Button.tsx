@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { theme } from "../theme";
 
 export default function Button({
@@ -7,13 +7,17 @@ export default function Button({
   onPress,
   variant = "primary",
   disabled = false,
-  style
+  style,
+  right,
+  left
 }: {
   title: string;
   onPress: () => void;
   variant?: "primary" | "secondary" | "danger";
   disabled?: boolean;
   style?: ViewStyle;
+  right?: React.ReactNode;
+  left?: React.ReactNode;
 }) {
   const textColor = variant === "primary" ? "#000" : theme.colors.text;
   return (
@@ -28,7 +32,13 @@ export default function Button({
         style
       ]}
     >
-      <Text style={[styles.text, { color: textColor }]}>{title}</Text>
+      <View style={styles.row}>
+        {left ? <View style={styles.side}>{left}</View> : null}
+        <Text style={[styles.text, { color: textColor }]} numberOfLines={1}>
+          {title}
+        </Text>
+        {right ? <View style={styles.side}>{right}</View> : null}
+      </View>
     </Pressable>
   );
 }
@@ -43,11 +53,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
+  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, width: "100%" },
+  side: { flexShrink: 0 },
   primary: { backgroundColor: theme.colors.accent, borderColor: "rgba(240,185,11,0.5)" },
   secondary: { backgroundColor: "rgba(255,255,255,0.06)" },
   danger: { backgroundColor: "rgba(239,68,68,0.20)", borderColor: "rgba(239,68,68,0.35)" },
   pressed: { opacity: 0.9 },
   disabled: { opacity: 0.5 },
-  text: { fontWeight: "800" }
+  text: { fontWeight: "800", flexShrink: 1 }
 });
-

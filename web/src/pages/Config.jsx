@@ -352,7 +352,7 @@ export default function Config({ token, setToken }) {
             <div>
               <div className="text-sm font-extrabold">Conectar no app (QR Code)</div>
               <div className="mt-1 text-xs text-white/60">
-                No app mobile, vocÃª pode digitar manualmente ou escanear um QR com <span className="font-mono">baseUrl</span> + token.
+                No app mobile, você pode digitar manualmente ou escanear um QR com <span className="font-mono">baseUrl</span> + token.
               </div>
             </div>
             <Button variant="secondary" onClick={() => setQrOn((v) => !v)}>
@@ -364,13 +364,13 @@ export default function Config({ token, setToken }) {
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr] md:items-start">
               <div className="flex items-center justify-center rounded-xl border border-white/10 bg-black/20 p-3">
                 {qrUrl ? (
-                  <img src={qrUrl} alt="QR Code de conexÃ£o (baseUrl + token)" className="h-[200px] w-[200px] rounded-lg" />
+                  <img src={qrUrl} alt="QR Code de conexão (baseUrl + token)" className="h-[200px] w-[200px] rounded-lg" />
                 ) : (
                   <div className="text-xs text-white/60">Gerando QRâ€¦</div>
                 )}
               </div>
               <div className="text-xs text-white/70">
-                <div className="text-white/80 font-bold">ConteÃºdo</div>
+                <div className="text-white/80 font-bold">Conteúdo</div>
                 <div className="mt-1 rounded-xl border border-white/10 bg-black/20 p-3 font-mono">
                   baseUrl: {mobileConnect.baseUrl}
                   <br />

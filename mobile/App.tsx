@@ -7,21 +7,29 @@ import Badge from "./src/ui/Badge";
 import ConnectScreen from "./src/screens/ConnectScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import MarketsScreen from "./src/screens/MarketsScreen";
+import TradesScreen from "./src/screens/TradesScreen";
+import DecisionsScreen from "./src/screens/DecisionsScreen";
+import NewsScreen from "./src/screens/NewsScreen";
 import BotScreen from "./src/screens/BotScreen";
 import HealthScreen from "./src/screens/HealthScreen";
+import LogsScreen from "./src/screens/LogsScreen";
 import ConfigScreen from "./src/screens/ConfigScreen";
 import { loadSettings, saveSettings, type MobileSettings } from "./src/lib/storage";
+import AuthScreen from "./src/screens/AuthScreen";
+import { getAppAuthStatus } from "./src/lib/appAuth";
 
-type TabKey = "dashboard" | "markets" | "bot" | "health" | "config";
+type TabKey = "dashboard" | "markets" | "trades" | "decisions" | "news" | "bot" | "health" | "logs" | "config";
 
 export default function App() {
   const [settings, setSettings] = useState<MobileSettings | null>(null);
   const [tab, setTab] = useState<TabKey>("dashboard");
   const [loaded, setLoaded] = useState(false);
+  const [appAuthEnabled, setAppAuthEnabled] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
-    loadSettings()
-      .then((s) => setSettings(s))
+    Promise.all([loadSettings().then((s) => setSettings(s)), getAppAuthStatus().then((s) => setAppAuthEnabled(!!s.enabled))])
+      .catch(() => {})
       .finally(() => setLoaded(true));
   }, []);
 
@@ -33,14 +41,24 @@ export default function App() {
     setTab("dashboard");
   };
 
+  const onAuthed = async () => {
+    const s = await getAppAuthStatus().catch(() => ({ enabled: false, user: "" }));
+    setAppAuthEnabled(!!s.enabled);
+    setUnlocked(true);
+  };
+
   const content = useMemo(() => {
     if (!connected) return null;
     const baseUrl = settings!.baseUrl;
     const token = settings!.token;
     if (tab === "dashboard") return <DashboardScreen baseUrl={baseUrl} token={token} />;
     if (tab === "markets") return <MarketsScreen baseUrl={baseUrl} token={token} />;
+    if (tab === "trades") return <TradesScreen baseUrl={baseUrl} token={token} />;
+    if (tab === "decisions") return <DecisionsScreen baseUrl={baseUrl} token={token} />;
+    if (tab === "news") return <NewsScreen baseUrl={baseUrl} token={token} />;
     if (tab === "bot") return <BotScreen baseUrl={baseUrl} token={token} />;
     if (tab === "health") return <HealthScreen baseUrl={baseUrl} token={token} />;
+    if (tab === "logs") return <LogsScreen baseUrl={baseUrl} token={token} />;
     return (
       <ConfigScreen
         baseUrl={baseUrl}
@@ -49,6 +67,7 @@ export default function App() {
           setSettings(next.baseUrl ? next : null);
           setTab("dashboard");
         }}
+        onLock={() => setUnlocked(false)}
       />
     );
   }, [connected, settings, tab]);
@@ -73,6 +92,15 @@ export default function App() {
     );
   }
 
+  if (!unlocked) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="light" />
+        <AuthScreen onAuthed={() => onAuthed().catch(() => {})} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="light" />
@@ -87,8 +115,12 @@ export default function App() {
       <View style={styles.tabs}>
         <TabButton title="Painel" active={tab === "dashboard"} onPress={() => setTab("dashboard")} />
         <TabButton title="Mercados" active={tab === "markets"} onPress={() => setTab("markets")} />
+        <TabButton title="Trades" active={tab === "trades"} onPress={() => setTab("trades")} />
+        <TabButton title="Decisões" active={tab === "decisions"} onPress={() => setTab("decisions")} />
+        <TabButton title="Notícias" active={tab === "news"} onPress={() => setTab("news")} />
         <TabButton title="Bot" active={tab === "bot"} onPress={() => setTab("bot")} />
         <TabButton title="Saúde" active={tab === "health"} onPress={() => setTab("health")} />
+        <TabButton title="Logs" active={tab === "logs"} onPress={() => setTab("logs")} />
         <TabButton title="Config" active={tab === "config"} onPress={() => setTab("config")} />
       </View>
 
@@ -121,4 +153,3 @@ const styles = StyleSheet.create({
   tab: { flexGrow: 1 },
   body: { flex: 1 }
 });
-
