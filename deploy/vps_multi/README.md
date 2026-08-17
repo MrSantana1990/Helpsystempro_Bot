@@ -1,78 +1,65 @@
-# Deploy VPS Multi (1 VPS, múltiplos clientes) — HelpSystem Pro • Binance Bot
+<div align="center">
 
-Objetivo: rodar **24/7** em **uma VPS maior** com **isolamento por cliente (1 container por cliente)**, acessível via web.
+# 🧱 Deploy VPS Multi
 
-> Aviso: não é recomendação financeira e não há garantia de lucro. Use testnet/dry-run primeiro.
+### Uma VPS, múltiplos clientes e um contêiner isolado por operação.
 
-## Por que esse modelo agora
-- Custo menor que 1 VPS por cliente no início
-- Mantém isolamento prático (container + volumes por cliente)
-- Evita Kubernetes cedo (complexidade)
+[![Modelo](https://img.shields.io/badge/modelo-multi--tenant-8b5cf6?style=for-the-badge)](#-arquitetura)
+[![Proxy](https://img.shields.io/badge/proxy-Traefik-24a1c1?style=for-the-badge&logo=traefikproxy&logoColor=white)](#-arquitetura)
+[![Risco](https://img.shields.io/badge/status-evolução-f59e0b?style=for-the-badge)](#-quando-usar)
 
-## Como funciona
-- `traefik` faz HTTPS e roteia por domínio/subdomínio
-- Cada cliente roda um container `helpsystempro-bot` com:
-  - `data/` (sqlite, auditoria, licença, runtime)
-  - `logs/`
-  - `BinanceBot/Configs/` (settings.yml e key.env)
+</div>
 
-## Pré-requisitos (VPS)
-- Ubuntu 22.04+
-- Docker + Docker Compose
-- DNS apontando para a VPS:
-  - `cliente1.seudominio.com`
-  - `cliente2.seudominio.com`
+---
 
-## Setup (base)
-1) Clone o repo na VPS
-2) Suba o proxy:
-```bash
-cd /opt/Helpsystempro_Bot
-docker compose -f deploy/vps_multi/base/docker-compose.yml up -d
-```
+## ✦ Quando usar
 
-## Criar um cliente (tenant)
-1) Crie a pasta do cliente:
-```bash
-bash deploy/vps_multi/bin/add-tenant.sh cliente1 cliente1.seudominio.com
-```
+Modelo para uma fase posterior, quando houver maturidade operacional para administrar vários clientes na mesma VPS. Para pilotos, prefira uma instância isolada.
 
-2) Edite o arquivo:
-- `deploy/vps_multi/tenants/cliente1/.env`
+## 🏗️ Arquitetura
 
-3) Suba o tenant:
-```bash
-bash deploy/vps_multi/bin/up-tenant.sh cliente1
-```
+    Internet
+       │
+    Traefik
+       ├── cliente-a → contêiner + volumes próprios
+       ├── cliente-b → contêiner + volumes próprios
+       └── cliente-c → contêiner + volumes próprios
 
-### Subir tudo de uma vez (proxy + todos os tenants)
-```bash
-bash deploy/vps_multi/bin/up-all.sh
-```
+Cada tenant possui dados, logs, configurações, token e domínio independentes.
 
-### Gerar basic auth (recomendado)
-Na VPS (Ubuntu), instale `htpasswd`:
-```bash
-sudo apt-get update && sudo apt-get install -y apache2-utils
-```
-Gere o hash já com escape de `$` (vira `$$`) e cole em `TENANT_BASIC_AUTH`:
-```bash
-bash deploy/vps_multi/bin/gen-basicauth.sh admin "SENHA_FORTE"
-```
+## 🚀 Base
 
-## Acesso
-- Portal do cliente: `https://cliente1.seudominio.com`
-- (Opcional) Dashboard do Traefik: `https://traefik.seudominio.com` (habilitar se quiser)
+    cd /opt/Helpsystempro_Bot
+    docker compose -f deploy/vps_multi/base/docker-compose.yml up -d
 
-## Segurança mínima (recomendado)
-- Binance API key **sem withdraw**
-- IP whitelist da Binance apontando para IP da VPS (se o cliente aceitar)
-- Senha forte no basic auth (proxy)
-- `HSP_PORTAL_TOKEN` longo e secreto (cada cliente diferente)
-- `ENABLE_AUTH=1` (obriga token nos endpoints `/api/*` de escrita/start/stop)
-- `HSP_LOCAL_ONLY=0` (obrigatório em cloud, senão bloqueia o IP do proxy)
-- LIVE só com:
-  - termo aceito
-  - licença válida
-  - `HSP_LIVE_TRADING=1`
-- 24/7: `HSP_AUTOSTART_BOT=1` (recomendado) com `HSP_AUTOSTART_DRY_RUN=1` por segurança
+## 👤 Novo tenant
+
+    bash deploy/vps_multi/bin/add-tenant.sh cliente1 cliente1.seudominio.com
+
+Revise deploy/vps_multi/tenants/cliente1/.env e então:
+
+    bash deploy/vps_multi/bin/up-tenant.sh cliente1
+
+Para subir todos:
+
+    bash deploy/vps_multi/bin/up-all.sh
+
+## 🔐 Credenciais
+
+Gere autenticação básica com:
+
+    bash deploy/vps_multi/bin/gen-basicauth.sh admin "SENHA_FORTE"
+
+## 🛡️ Checklist mínimo
+
+- chave Binance sem saque e com IP autorizado;
+- token exclusivo por tenant;
+- ENABLE_AUTH=1;
+- LIVE desligado no piloto;
+- volumes e redes separados;
+- HTTPS, backups e logs;
+- limites de CPU/memória;
+- teste de restauração;
+- contrato e validação jurídica.
+
+> Multi-tenant aumenta o impacto de falhas. Só avance após monitoramento, backup e resposta a incidentes estarem testados.

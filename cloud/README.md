@@ -1,49 +1,64 @@
-# HelpSystem Pro — Plataforma Central (Cloud 24/7)
+<div align="center">
 
-Este diretório inicia a **Fase Cloud**: multiusuário, autenticação obrigatória e execução 24/7 (VPS/containers).
+# ☁️ HelpSystem Pro Cloud
 
-Objetivo:
-- Um backend central com **usuários + tenants + planos**
-- **2FA obrigatório (TOTP / Google Authenticator)**
-- Admin panel para você gerenciar clientes
-- Execução do bot em containers isolados por cliente (próxima etapa)
+### Identidade, administração e operação central 24/7.
 
-> Aviso: não é recomendação financeira e não há garantia de lucro.
+[![API](https://img.shields.io/badge/API-TypeScript-3178c6?style=for-the-badge&logo=typescript)](api/)
+[![Banco](https://img.shields.io/badge/banco-PostgreSQL-4169e1?style=for-the-badge&logo=postgresql&logoColor=white)](compose/)
+[![2FA](https://img.shields.io/badge/2FA-TOTP-22c55e?style=for-the-badge)](#-primeiro-acesso)
 
-## Estrutura
-- `cloud/api/` — API (Node.js + TypeScript + Express + tRPC + Zod)
-- `cloud/compose/` — Docker Compose (Postgres + API)
- - `cloud/admin/` — Painel admin (React + Vite + Tailwind)
+</div>
 
-## Rodar local (Docker)
-1) Copie `cloud/compose/.env.example` para `cloud/compose/.env`
-2) Suba:
-```bash
-cd cloud/compose
-docker compose up -d --build
-```
+---
 
-3) Health:
-- `http://localhost:8802/health`
+## ✦ Objetivo
 
-## Rodar o Admin (web)
-Em outro terminal:
-```bash
-cd cloud/admin
-npm install
-npm run dev
-```
+Camada central para usuários, empresas, planos, licenças, auditoria e autenticação. A execução de cada bot permanece isolada.
 
-- Admin: `http://localhost:8801`
+## 🧩 Componentes
 
-## Bootstrap do primeiro admin
-Na primeira vez, o sistema permite criar o 1º admin com um **código de bootstrap** (env `HSP_BOOTSTRAP_CODE`).
+| Diretório | Responsabilidade |
+|---|---|
+| [api](api/) | API Node.js, TypeScript, Express, tRPC e Zod |
+| [admin](admin/) | Console administrativo React |
+| [compose](compose/) | PostgreSQL, API e infraestrutura local |
 
-Depois disso, bootstrap é bloqueado.
+## 🚀 Executar
 
-Fluxo sugerido:
-1) Abra o Admin (`http://localhost:8801`)
-2) Faça o bootstrap do 1º admin (código + email + senha)
-3) Faça setup do 2FA (escaneia o QR no Google Authenticator e habilita)
-4) Faça login com email/senha/TOTP
-5) Cadastre usuários, clientes (tenants) e vincule usuário → tenant
+1. Copie cloud/compose/.env.example para cloud/compose/.env.
+2. Gere segredos fortes e exclusivos.
+3. Inicie:
+
+       cd cloud/compose
+       docker compose up -d --build
+
+4. Verifique http://localhost:8802/health.
+
+Painel em desenvolvimento:
+
+    cd cloud/admin
+    npm install
+    npm run dev
+
+## 🔐 Primeiro acesso
+
+1. Abra http://localhost:8801.
+2. Crie o primeiro administrador com HSP_BOOTSTRAP_CODE.
+3. Configure TOTP no autenticador.
+4. Confirme o 2FA.
+5. Cadastre usuários e empresas.
+6. Vincule cada usuário ao tenant correto.
+
+O bootstrap é bloqueado após o primeiro administrador.
+
+## 🛡️ Produção
+
+- nunca reutilize os valores dos arquivos example;
+- mantenha banco e API fora de portas públicas;
+- use HTTPS e Cloudflare Access;
+- faça backup do PostgreSQL;
+- rotacione segredos;
+- preserve logs de auditoria.
+
+> Não há garantia de lucro e este software não constitui recomendação financeira.

@@ -1,0 +1,40 @@
+name: helpsystempro-trade
+
+services:
+  app:
+    image: helpsystempro-bot:local
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${HSP_PORT:-8501}:8502"
+    environment:
+      HSP_PORTAL_TOKEN: "${HSP_PORTAL_TOKEN:?Defina um token forte}"
+      HSP_LOCAL_ONLY: "0"
+      ENABLE_AUTH: "1"
+      ENABLE_2FA: "${ENABLE_2FA:-0}"
+      LIVE_MODE: "0"
+      HSP_LIVE_TRADING: "0"
+      HSP_AUTOSTART_BOT: "0"
+      HSP_AUTOSTART_DRY_RUN: "0"
+    volumes:
+      - bot_data:/app/data
+      - bot_logs:/app/logs
+      - bot_configs:/app/BinanceBot/Configs
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8502/api/health', timeout=2)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 25s
+
+volumes:
+  bot_data:
+  bot_logs:
+  bot_configs:

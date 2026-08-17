@@ -1,85 +1,110 @@
-# HelpSystem • Binance Bot
+<div align="center">
 
-Portal operacional (React) + API (FastAPI) + bot (Python), com:
-- Decisões explicáveis (técnico + sentimento + eventos)
-- Risk controls e kill switch
-- Licença e compliance
-- Histórico/auditoria em SQLite + export CSV
-- Central de suporte no web e no app (setor + prioridade + chamado)
+# ⚡ HelpSystem Pro · Binance Automation
 
-> Aviso: não existe garantia de lucro. Use dry-run/testnet antes de LIVE.
+### Operação assistida, risco visível e decisões explicáveis.
 
-## Rodar local (Windows / PowerShell)
+[![CI](https://img.shields.io/github/actions/workflow/status/MrSantana1990/Helpsystempro_Bot/ci.yml?style=for-the-badge&label=CI)](https://github.com/MrSantana1990/Helpsystempro_Bot/actions)
+[![Python](https://img.shields.io/badge/Python-3.12-3776ab?style=for-the-badge&logo=python&logoColor=white)](#-arquitetura)
+[![React](https://img.shields.io/badge/React-painel-61dafb?style=for-the-badge&logo=react&logoColor=black)](#-arquitetura)
+[![Modo](https://img.shields.io/badge/padrão-dry--run-f59e0b?style=for-the-badge)](#-segurança-operacional)
 
-```powershell
-cd D:\DEV\Helpsystempro_Bot
-powershell -NoProfile -ExecutionPolicy Bypass -File .\run_local.ps1
-```
+[Apresentação](https://bot.helpsystempro.site) · [Manual](docs/MANUAL.md) · [Cloud](cloud/README.md) · [Mobile](mobile/README.md) · [VPS](deploy/vps/README.md)
 
-- Portal: `http://localhost:8501`
-- API: `http://localhost:8502/docs`
+</div>
 
-### Modo LAN (celular)
+---
 
-```powershell
-cd D:\DEV\Helpsystempro_Bot
-powershell -NoProfile -ExecutionPolicy Bypass -File .\run_local.ps1 -Lan
-```
+## ✦ Visão
 
-- API em LAN (`0.0.0.0`) + token aleatório.
-- No celular: `http://IP_DO_PC:8502` + token LAN.
+Plataforma para monitorar e automatizar estratégias com um portal React, API FastAPI e motor Python. O projeto prioriza controles de risco, rastreabilidade e operação simulada antes de qualquer uso real.
 
-### Dados mock
+> **Aviso:** não existe garantia de lucro. Este software não é recomendação financeira. Comece sempre em dry-run/testnet.
 
-```powershell
-.\run_local.ps1 -Mock -Seed 42
-```
+## ✨ Capacidades
 
-## Web + mobile (2 terminais)
+| Pilar | Recursos |
+|---|---|
+| Decisão | Indicadores técnicos, sentimento e eventos |
+| Risco | Limites diários, validações e kill switch |
+| Operação | Dry-run, testnet e LIVE com múltiplas travas |
+| Auditoria | Histórico SQLite, logs e exportação CSV |
+| Plataforma | Licenças, planos, usuários e suporte |
+| Experiência | Portal web e aplicativo Android/iOS |
+
+## 🏗️ Arquitetura
+
+    Portal React ───────┐
+                       ├── FastAPI ── Motor Python ── Binance
+    Aplicativo Mobile ─┘       │
+                               ├── SQLite / auditoria
+                               └── Cloud API / licenças
+
+| Componente | Tecnologia | Porta local |
+|---|---|---:|
+| Portal operacional | React + Vite | 8501 |
+| API do bot | Python + FastAPI | 8502 |
+| Cloud Admin | React + Vite | 8801 |
+| Cloud API | Node.js + TypeScript | 8802 |
+
+## 🚀 Início rápido
+
+### Windows
+
+    cd D:\DEV\Helpsystempro_Bot
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\run_local.ps1
+
+Com dados demonstrativos:
+
+    .\run_local.ps1 -Mock -Seed 42
+
+### Docker completo
+
+    .\run_docker_full.ps1
+
+## 📱 Teste no celular
 
 Terminal 1:
-```powershell
-cd D:\DEV\Helpsystempro_Bot
-.\run_local.ps1 -Lan
-```
+
+    .\run_local.ps1 -Lan
 
 Terminal 2:
-```powershell
-cd D:\DEV\Helpsystempro_Bot
-.\run_mobile.ps1
-```
 
-## Docker full (1 play)
+    .\run_mobile.ps1
 
-```powershell
-cd D:\DEV\Helpsystempro_Bot
-.\run_docker_full.ps1
-```
+Use o token temporário exibido pelo iniciador. Não exponha a porta LAN fora de uma rede confiável.
 
-URLs:
-- Operacional: `http://localhost:8501`
-- Bot API: `http://localhost:8502/docs`
-- Cloud Admin: `http://localhost:8801`
-- Cloud API: `http://localhost:8802/health`
+## 🛡️ Segurança operacional
 
-## Suporte na plataforma
+- LIVE desligado por padrão;
+- testnet/dry-run como ponto de partida;
+- duas liberações explícitas antes de operação real;
+- API Key Binance sem permissão de saque;
+- allowlist do IP da VPS recomendada;
+- token do portal obrigatório;
+- kill switch e limites diários;
+- segredos fora do Git;
+- painel público somente atrás de Cloudflare Access.
 
-- Web (`8501`): menu `Sistema > Suporte`
-- Mobile: aba `Suporte`
-- API de suporte:
-  - `GET /api/support/sectors`
-  - `POST /api/support/tickets`
-  - `GET /api/support/tickets`
+## 📚 Documentação
 
-## Documentação
+| Guia | Objetivo |
+|---|---|
+| [Manual](docs/MANUAL.md) | Operação diária |
+| [Manual comercial](docs/MANUAL_COMERCIAL.md) | Apresentação do produto |
+| [Cloud Admin](docs/CLOUD_ADMIN.md) | Administração central |
+| [Docker Full](docs/DOCKER_FULL_PLAY.md) | Ambiente completo |
+| [Relatório geral](docs/RELATORIO_GERAL_SISTEMA.md) | Estado técnico |
+| [VPS](deploy/vps/GUIA_PASSO_A_PASSO.md) | Implantação 24/7 |
 
-- `docs/MANUAL.md`
-- `docs/MANUAL_COMERCIAL.md`
-- `docs/CLOUD_ADMIN.md`
-- `docs/DOCKER_FULL_PLAY.md`
-- `docs/RELATORIO_GERAL_SISTEMA.md`
-- `deploy/vps/GUIA_PASSO_A_PASSO.md`
+## ⚖️ Responsabilidade
 
-## App mobile
+Criptoativos envolvem risco elevado. O operador é responsável por testar estratégias, definir limites e proteger credenciais. O projeto não promete rentabilidade nem substitui orientação financeira, tributária ou jurídica.
 
-Código em `mobile/` (Expo SDK 54). Guia completo em `mobile/README.md`.
+---
+
+<div align="center">
+
+**HelpSystem Pro** · Automação com controle antes da velocidade.
+
+</div>

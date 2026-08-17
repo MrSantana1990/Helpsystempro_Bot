@@ -1,58 +1,73 @@
-# HelpSystem Mobile (Expo)
+<div align="center">
 
-App mobile Android/iOS para operação e monitoramento do HelpSystem.
+# 📱 HelpSystem Pro Mobile
 
-## Recursos atuais
-- Painel mobile com visual premium (dark fintech)
-- Tabs de operação (Painel, Mercados, Trades, Decisões, Bot, Saúde, Logs, Config)
-- Aba **Suporte** com abertura de chamado por setor/prioridade
-- Login local no aparelho + token/API configurável por QR Code
+### Operação, inteligência e risco na palma da mão.
 
-## Pré-requisitos
-- Node.js 20+
-- Expo Go atualizado
-- Backend do bot rodando
+[![Expo](https://img.shields.io/badge/Expo-SDK_54-000020?style=for-the-badge&logo=expo)](#-executar)
+[![Android](https://img.shields.io/badge/Android-compatível-3ddc84?style=for-the-badge&logo=android&logoColor=white)](#-executar)
+[![iOS](https://img.shields.io/badge/iOS-compatível-black?style=for-the-badge&logo=apple)](#-executar)
+[![2FA](https://img.shields.io/badge/login-2FA-22c55e?style=for-the-badge)](#-segurança)
 
-## Rodar backend em LAN
+</div>
 
-No root do projeto:
+---
 
-```powershell
-cd D:\DEV\Helpsystempro_Bot
-.\run_local.ps1 -Lan
-```
+## ✦ Experiência
 
-Use no app:
-- Base URL: `http://IP_DO_PC:8502`
-- Token: `lan-...` gerado no terminal
+Aplicativo React Native com interface dark fintech, navegação simplificada e conexão segura ao backend local ou à VPS.
 
-## Rodar app
+## ✨ Recursos
 
-```powershell
-cd D:\DEV\Helpsystempro_Bot\mobile
-npm install
-npm run start
-```
+| Área | Entrega |
+|---|---|
+| Dashboard | Estado da conta, operação e risco |
+| IA | Decisões e explicações |
+| Mercado | Indicadores e acompanhamento |
+| Bot | Controles autorizados |
+| Conta | Plano, licença, senha e suporte |
 
-Depois escaneie o QR no Expo Go.
+Inclui onboarding guiado, login com TOTP, conexão por QR Code e central de chamados.
 
-## Erro de versão Expo Go
+## 🧱 Requisitos
 
-Se aparecer incompatibilidade:
+- Node.js 20 ou superior;
+- Expo Go atualizado;
+- API local em LAN ou VPS protegida.
 
-```powershell
-cd D:\DEV\Helpsystempro_Bot\mobile
-Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
-Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue
-npm install
-npx expo start
-```
+## 🚀 Executar
 
-## Endpoints usados no suporte
-- `GET /api/support/sectors`
-- `POST /api/support/tickets`
-- `GET /api/support/tickets?mine=true`
+Primeiro, no diretório raiz:
 
-## Compliance
+    .\run_local.ps1 -Lan
 
-Não é recomendação financeira e não há garantia de lucro.
+Depois:
+
+    cd mobile
+    npm install
+    npm run start
+
+Escaneie o QR Code com o Expo Go. Para limpar um bundle antigo:
+
+    npx expo start --clear
+
+## 🧭 Fluxo
+
+1. onboarding;
+2. conexão com API;
+3. login e 2FA;
+4. dashboard;
+5. operação conforme permissões.
+
+## 🔐 Segurança
+
+- token mantido no armazenamento seguro disponível;
+- TOTP para contas cloud;
+- nenhuma chave Binance digitada no aplicativo;
+- ações críticas dependem da API;
+- URLs HTTP somente para testes em LAN confiável;
+- VPS sempre com HTTPS e controle de acesso.
+
+## ⚖️ Aviso
+
+O aplicativo não oferece recomendação financeira nem garantia de lucro. Use dry-run/testnet e respeite os limites de risco.
