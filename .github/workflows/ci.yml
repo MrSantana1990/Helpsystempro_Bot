@@ -25,6 +25,8 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ matrix.project }}/package-lock.json
       - run: npm ci
+      - if: matrix.project == 'cloud/admin'
+        run: npm install --no-save --no-package-lock @rollup/rollup-linux-x64-gnu
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
 
